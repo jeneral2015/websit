@@ -1,0 +1,3 @@
+- [ ] Modify lib/glowing_button.dart: Make argument optional (String? argument), remove import 'booking_form.dart;', keep animations.
+- [ ] Modify lib/landing_page.dart: Remove the duplicate GlowingButton class and _GlowingButtonState, update usages: for booking buttons, set onPressed: null, argument: relevant string (e.g., service title or 'حجز موعد'), for other buttons, keep onPressed.
+- [ ] Test that all buttons work correctly after changes.

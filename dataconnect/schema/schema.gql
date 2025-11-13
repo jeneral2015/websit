@@ -1,0 +1,29 @@
+type User @table {
+  username: String!
+  email: String!
+  createdAt: Timestamp!
+  displayName: String
+  profilePictureUrl: String
+}
+
+type Website @table {
+  url: String!
+  title: String!
+  description: String!
+  isPublic: Boolean!
+  createdAt: Timestamp!
+  faviconUrl: String
+  user: User
+}
+
+type Category @table {
+  name: String!
+  createdAt: Timestamp!
+  description: String
+}
+
+type WebsiteCategory @table(key: ["website", "category"]) {
+  createdAt: Timestamp!
+  website: Website!
+  category: Category!
+}

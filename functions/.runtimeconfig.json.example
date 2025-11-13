@@ -1,0 +1,6 @@
+{
+  "dropbox": {
+    "token": "<PUT_YOUR_DROPBOX_ACCESS_TOKEN_VIA_FIREBASE_CONFIG - DO NOT COMMIT>",
+    "app_key": "<OPTIONAL_DROPBOX_APP_KEY>"
+  }
+}
