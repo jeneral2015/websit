@@ -1,6 +1,22 @@
 // initial_data.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+Future<void> addInitialSettings() async {
+  final settings = {
+    'welcomeMessage': 'مرحبا بكم فى',
+    'clinicWord': 'عيادة',
+    'doctorName': 'د/ سارة أحمد',
+    'specialty': 'استشاري جلدية وتجميل وليزر',
+    'backgroundUrl': '',
+    'logoUrl': '',
+  };
+
+  await FirebaseFirestore.instance
+      .collection('site_data')
+      .doc('settings')
+      .set(settings);
+}
+
 void addInitialServices() async {
   final services = [
     {

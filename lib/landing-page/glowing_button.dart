@@ -45,6 +45,9 @@ class _GlowingButtonState extends State<GlowingButton>
 
   @override
   void dispose() {
+    if (_controller.isAnimating) {
+      _controller.stop();
+    }
     _controller.dispose();
     super.dispose();
   }
@@ -76,7 +79,7 @@ class _GlowingButtonState extends State<GlowingButton>
                 borderRadius: BorderRadius.circular(12),
               ),
               elevation: _elevationAnimation.value,
-              shadowColor: Colors.pink.withOpacity(0.5),
+              shadowColor: Colors.pink.withValues(alpha: 0.5),
             ),
             child: Text(
               widget.text,

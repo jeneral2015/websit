@@ -47,6 +47,12 @@ dependencies:
   http: 1.5.0
   file_picker: ^8.0.0
   font_awesome_flutter: ^10.12.0
+  carousel_slider: ^5.1.1
+  flutter_local_notifications: ^17.0.0
+  shared_preferences: ^2.2.2
+  firebase_messaging: ^16.0.3
+  image_picker: ^1.2.1
+
 
 dev_dependencies:
   flutter_test:
@@ -58,6 +64,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -91,4 +98,9 @@ flutter:
       fonts:
         - asset: fonts/NotoSansArabic-Regular.ttf
         - asset: fonts/NotoSansArabic-Bold.ttf
+          weight: 700
+    - family: NotoSans
+      fonts:
+        - asset: fonts/NotoSans-Regular.ttf
+        - asset: fonts/NotoSans-Bold.ttf
           weight: 700

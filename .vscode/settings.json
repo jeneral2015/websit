@@ -1,0 +1,10 @@
+{
+    "workbench.view.showQuietly": {
+        "workbench.panel.output": false
+    },
+    "breadcrumbs.symbolPath": "on",
+    "terminal.integrated.accessibleViewFocusOnCommandExecution": false,
+    "terminal.integrated.accessibleViewPreserveCursorPosition": false,
+    "terminal.sourceControlRepositoriesKind": "integrated",
+    "terminal.integrated.gpuAcceleration": "off"
+}
