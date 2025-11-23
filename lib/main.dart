@@ -15,7 +15,8 @@ import 'package:websit/landing-page/service_details_page.dart';
 import 'package:websit/landing-page/image_viewer_page.dart';
 import 'package:websit/admin_dashboard/archive_page.dart';
 import 'package:websit/landing-page/ratings_page.dart';
-// ← مهم جدًا
+import 'package:websit/auth/auth_gate.dart';
+import 'package:websit/auth/login_page.dart';
 
 // 🔑 Top-level handler for background messages (must be outside any class)
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -23,7 +24,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
   // You can log or handle background message here
   debugPrint("Handling a background message: ${message.messageId}");
-  // Optionally: show local notification here for background-only handling
 }
 
 void main() async {
@@ -37,17 +37,10 @@ void main() async {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     await FirebaseMessaging.instance.setAutoInitEnabled(true);
 
-    // ✅ Optional: register device token (useful for targeted notifications later)
+    // ✅ Optional: register device token
     try {
       final fcmToken = await FirebaseMessaging.instance.getToken();
       if (fcmToken != null) {
-        // Save to Firestore if you want (e.g., in 'devices' collection)
-        // Example:
-        // FirebaseFirestore.instance.collection('devices').doc(fcmToken).set({
-        //   'token': fcmToken,
-        //   'platform': defaultTargetPlatform.toString(),
-        //   'lastSeen': FieldValue.serverTimestamp(),
-        // });
         debugPrint('FCM Token: $fcmToken');
       }
     } catch (e) {
@@ -91,8 +84,11 @@ class BeautyClinicApp extends StatelessWidget {
       builder: (context, child) {
         return Directionality(textDirection: TextDirection.rtl, child: child!);
       },
-      home: const SplashScreen(),
+      home: const SplashScreen(), // � Start with Splash Screen
       routes: {
+        '/auth_gate': (context) =>
+            const AuthGate(), // Add named route for AuthGate
+        '/login': (context) => const LoginPage(),
         '/admin': (context) => const AdminDashboard(),
         '/booking': (context) => const BookingForm(),
         '/services': (context) => const ServicesPage(),

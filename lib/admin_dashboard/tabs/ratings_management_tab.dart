@@ -201,11 +201,13 @@ class _RatingsManagementTabState extends State<RatingsManagementTab> {
                       'likes': int.tryParse(likesController.text) ?? 0,
                       'stars': stars,
                     });
-                    if (mounted) Navigator.pop(context);
+                    if (context.mounted) Navigator.pop(context);
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('حدث خطأ أثناء التحديث')),
-                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('حدث خطأ أثناء التحديث')),
+                      );
+                    }
                   }
                 },
                 child: const Text('حفظ'),

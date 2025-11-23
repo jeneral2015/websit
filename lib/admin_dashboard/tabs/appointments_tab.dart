@@ -8,7 +8,7 @@ class AppointmentsTab extends StatefulWidget {
   const AppointmentsTab({super.key, required this.notificationsManager});
 
   @override
-  _AppointmentsTabState createState() => _AppointmentsTabState();
+  State<AppointmentsTab> createState() => _AppointmentsTabState();
 }
 
 class _AppointmentsTabState extends State<AppointmentsTab> {

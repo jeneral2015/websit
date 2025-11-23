@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:websit/auth/auth_service.dart'; // ✅ Moved import to top
 import 'tabs/settings_tab.dart';
 import 'tabs/services_tab.dart';
 import 'tabs/gallery_tab.dart';
@@ -14,7 +16,7 @@ class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
 
   @override
-  _AdminDashboardState createState() => _AdminDashboardState();
+  State<AdminDashboard> createState() => _AdminDashboardState();
 }
 
 class _AdminDashboardState extends State<AdminDashboard>
@@ -22,6 +24,8 @@ class _AdminDashboardState extends State<AdminDashboard>
   late TabController _tabController;
   late final NotificationsManager _notificationsManager;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  bool _hasShownInitialNotifications = false;
+  StreamSubscription<int>? _notificationSubscription;
 
   final List<String> _tabNames = [
     'الإعدادات',
@@ -39,19 +43,25 @@ class _AdminDashboardState extends State<AdminDashboard>
     _notificationsManager = NotificationsManager();
     _tabController = TabController(length: 7, vsync: this);
     _notificationsManager.initializeNotifications();
-  }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Show popup after first frame + data loaded
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _notificationsManager.showUnreadPopupIfExist(context);
-    });
+    // Listen to notifications stream and show popup when unread notifications arrive
+    _notificationSubscription = _notificationsManager.unreadNotificationsStream
+        .listen((count) {
+          if (!_hasShownInitialNotifications && count > 0) {
+            _hasShownInitialNotifications = true;
+            // Use a small delay to ensure UI is ready
+            Future.delayed(const Duration(milliseconds: 800), () {
+              if (mounted) {
+                _notificationsManager.showUnreadPopupIfExist(context);
+              }
+            });
+          }
+        });
   }
 
   @override
   void dispose() {
+    _notificationSubscription?.cancel();
     _notificationsManager.dispose();
     _tabController.dispose();
     super.dispose();
@@ -90,7 +100,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                         ? CachedNetworkImage(
                             imageUrl: settings['logoUrl'],
                             fit: BoxFit.cover,
-                            placeholder: (_, __) => Icon(
+                            placeholder: (context, url) => Icon(
                               Icons.medical_services,
                               color: Theme.of(context).colorScheme.onPrimary,
                             ),
@@ -102,12 +112,11 @@ class _AdminDashboardState extends State<AdminDashboard>
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Text container
-                SizedBox(
-                  height: 60,
+                // Text container - wrapped in Flexible to prevent overflow
+                Flexible(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         '${settings['clinicWord'] ?? 'عيادة'} ${settings['doctorName'] ?? 'د/ سارة أحمد'}',
@@ -116,6 +125,8 @@ class _AdminDashboardState extends State<AdminDashboard>
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                       Text(
                         'لوحة التحكم - ${_tabNames[_tabController.index]}',
@@ -124,6 +135,8 @@ class _AdminDashboardState extends State<AdminDashboard>
                           fontSize: 12,
                           fontWeight: FontWeight.w400,
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ],
                   ),
@@ -131,11 +144,20 @@ class _AdminDashboardState extends State<AdminDashboard>
               ],
             ),
             toolbarHeight: 80,
-            actions: [_buildNotificationsButton()],
+            actions: [
+              _buildNotificationsButton(),
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.white),
+                onPressed: () {
+                  _showLogoutConfirmation(context);
+                },
+                tooltip: 'تسجيل الخروج',
+              ),
+            ],
             bottom: TabBar(
               controller: _tabController,
               labelColor: Colors.white,
-              unselectedLabelColor: Colors.pink[200],
+              unselectedLabelColor: Colors.black,
               indicatorColor: Colors.white,
               isScrollable: true,
               tabs: _tabNames.map((name) => Tab(text: name)).toList(),
@@ -176,9 +198,35 @@ class _AdminDashboardState extends State<AdminDashboard>
     );
   }
 
+  void _showLogoutConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('تسجيل الخروج'),
+        content: const Text('هل أنت متأكد من تسجيل الخروج؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await AuthService().logout();
+              // AuthGate will handle the redirect to login page automatically
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('خروج'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildNotificationsButton() {
     return StreamBuilder<int>(
       stream: _notificationsManager.unreadNotificationsStream,
+      initialData: _notificationsManager.unreadCount, // ✅ Show initial count
       builder: (context, snapshot) {
         final unread = snapshot.data ?? 0;
         return Stack(
@@ -190,8 +238,13 @@ class _AdminDashboardState extends State<AdminDashboard>
                 color: unread > 0 ? Colors.white : Colors.pink[100],
                 size: 28,
               ),
-              onPressed: () =>
-                  _notificationsManager.showNotificationsDialog(context),
+              onPressed: () {
+                if (unread > 0) {
+                  _notificationsManager.showSequentialNotifications(context);
+                } else {
+                  _notificationsManager.showNotificationsDialog(context);
+                }
+              },
               tooltip: 'التنبيهات',
             ),
             if (unread > 0)

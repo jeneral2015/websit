@@ -48,12 +48,14 @@ Matrix4 getCarouselTransform(
   if (isMobile) {
     // تأثير أكثر دراماتيكية للشاشات الصغيرة
     return Matrix4.identity()
-      ..scale(scale, scale)
-      ..translate(0.0, (1 - scale) * 50);
+      ..setEntry(0, 0, scale)
+      ..setEntry(1, 1, scale)
+      ..setTranslationRaw(0.0, ((1 - scale) * 50) * scale, 0.0);
   } else {
     // تأثير أكثر أناقة للشاشات الكبيرة
     return Matrix4.identity()
-      ..scale(scale, scale)
-      ..translate((index - pageValue) * 50, 0.0);
+      ..setEntry(0, 0, scale)
+      ..setEntry(1, 1, scale)
+      ..setTranslationRaw(((index - pageValue) * 50) * scale, 0.0, 0.0);
   }
 }

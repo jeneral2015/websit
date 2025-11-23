@@ -5,7 +5,7 @@ class ArchivePage extends StatefulWidget {
   const ArchivePage({super.key});
 
   @override
-  _ArchivePageState createState() => _ArchivePageState();
+  State<ArchivePage> createState() => _ArchivePageState();
 }
 
 class _ArchivePageState extends State<ArchivePage> {

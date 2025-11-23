@@ -107,11 +107,34 @@ class BookingForm extends StatefulWidget {
                             Text(
                               dayName,
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 22,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.pink[800],
+                                color: Colors.pink[900],
                               ),
                             ),
+                            if (location.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.location_on,
+                                    size: 20,
+                                    color: Colors.pink[900],
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      location,
+                                      style: TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.pink[900],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                             const SizedBox(height: 4),
                             Row(
                               children: [
@@ -130,28 +153,6 @@ class BookingForm extends StatefulWidget {
                                 ),
                               ],
                             ),
-                            if (location.isNotEmpty) ...[
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.location_on,
-                                    size: 16,
-                                    color: Colors.grey[600],
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      location,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey[700],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
                           ],
                         ),
                       ),
@@ -272,9 +273,11 @@ class _BookingFormState extends State<BookingForm> {
       }
     } catch (e) {
       setState(() => _isSlotsLoading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('فشل تحميل الإعدادات')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('فشل تحميل الإعدادات')));
+      }
     }
   }
 
@@ -390,11 +393,13 @@ class _BookingFormState extends State<BookingForm> {
         _isSlotsLoading = false;
       });
     } catch (e) {
-      print('خطأ في تحميل المواعيد: $e');
+      debugPrint('خطأ في تحميل المواعيد: $e');
       setState(() => _isSlotsLoading = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('فشل تحميل المواعيد')));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('فشل تحميل المواعيد')));
+      }
     }
   }
 
@@ -430,7 +435,7 @@ class _BookingFormState extends State<BookingForm> {
 
       return bookedSlots;
     } catch (e) {
-      print('خطأ في تحميل الحجوزات: $e');
+      debugPrint('خطأ في تحميل الحجوزات: $e');
       return {};
     }
   }
@@ -524,7 +529,7 @@ class _BookingFormState extends State<BookingForm> {
 
       return TimeOfDay(hour: hour, minute: minute);
     } catch (e) {
-      print('خطأ في تحويل الوقت: "$timeStr" - $e');
+      debugPrint('خطأ في تحويل الوقت: "$timeStr" - $e');
       return const TimeOfDay(hour: 9, minute: 0);
     }
   }
@@ -982,14 +987,16 @@ class _BookingFormState extends State<BookingForm> {
         _selectedLocation!,
       ));
       if (!isStillAvailable) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'عذراً، هذا الوقت تم حجزه من قبل شخص آخر. يرجى اختيار وقت آخر.',
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'عذراً، هذا الوقت تم حجزه من قبل شخص آخر. يرجى اختيار وقت آخر.',
+              ),
+              backgroundColor: Colors.red,
             ),
-            backgroundColor: Colors.red,
-          ),
-        );
+          );
+        }
         await _loadAvailableSlots(forceReload: true);
         return;
       }
@@ -1126,7 +1133,7 @@ class _BookingFormState extends State<BookingForm> {
       }
 
       // 🔒 Use Transaction to ensure atomicity: appointment + notification
-      final docRef = await _firestore.runTransaction((transaction) async {
+      await _firestore.runTransaction((transaction) async {
         // 1. Create appointment
         final appointmentData = {
           'name': _name,
@@ -1165,12 +1172,14 @@ class _BookingFormState extends State<BookingForm> {
       }
     } catch (e) {
       debugPrint('❌ خطأ في الحجز: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('فشل الحجز، يرجى المحاولة مرة أخرى'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('فشل الحجز، يرجى المحاولة مرة أخرى'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -1289,190 +1298,6 @@ class _BookingFormState extends State<BookingForm> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(value, style: const TextStyle(color: Colors.grey)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Static method لعرض الجدول الأسبوعي في الصفحة الرئيسية
-  static Widget buildScheduleSection(
-    BuildContext context,
-    List<Map<String, dynamic>> weeklySchedule,
-  ) {
-    // فلترة الأيام المفعلة فقط
-    final enabledDays = weeklySchedule
-        .where((day) => day['enabled'] == true)
-        .toList();
-
-    if (enabledDays.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
-      color: Colors.transparent,
-      child: Column(
-        children: [
-          // عنوان القسم
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 500),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.pink.withValues(alpha: 0.3),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Text(
-              'مواعيد العمل',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.pink,
-              ),
-            ),
-          ),
-          const SizedBox(height: 30),
-
-          // عرض الجدول
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: enabledDays.map((day) {
-                    final dayName = day['day'] ?? '';
-                    final startTime = day['startTime'] ?? '';
-                    final endTime = day['endTime'] ?? '';
-                    final location = day['location'] ?? '';
-
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Colors.pink.shade50, Colors.white],
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.pink.shade100,
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          // أيقونة اليوم
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.pink.shade100,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              Icons.calendar_today,
-                              color: Colors.pink[800],
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-
-                          // معلومات اليوم
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  dayName,
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.pink[800],
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.access_time,
-                                      size: 16,
-                                      color: Colors.grey[600],
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '$startTime - $endTime',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey[700],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                if (location.isNotEmpty) ...[
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.location_on,
-                                        size: 16,
-                                        color: Colors.grey[600],
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Expanded(
-                                        child: Text(
-                                          location,
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey[700],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          // زر الحجز
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const BookingForm()),
-              );
-            },
-            icon: const Icon(Icons.calendar_month),
-            label: const Text('احجز موعدك الآن'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.pink[800],
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 4,
-            ),
           ),
         ],
       ),

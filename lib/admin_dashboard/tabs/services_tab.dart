@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import '../../services/dropbox_uploader.dart';
 
@@ -9,13 +8,12 @@ class ServicesTab extends StatefulWidget {
   const ServicesTab({super.key});
 
   @override
-  _ServicesTabState createState() => _ServicesTabState();
+  State<ServicesTab> createState() => _ServicesTabState();
 }
 
 class _ServicesTabState extends State<ServicesTab> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final DropboxUploader _dropboxUploader = DropboxUploader();
-  final ImagePicker _imagePicker = ImagePicker();
 
   @override
   Widget build(BuildContext context) {
@@ -127,7 +125,7 @@ class _ServicesTabState extends State<ServicesTab> {
                             file.name,
                             docId: 'services',
                           );
-                          if (url != null) {
+                          if (url != null && context.mounted) {
                             setStateDialog(() => images.add(url));
                           }
                         }
@@ -138,53 +136,55 @@ class _ServicesTabState extends State<ServicesTab> {
                 ),
                 const SizedBox(height: 16),
                 Expanded(
-                  child: GridView.builder(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                        ),
-                    itemCount: images.length,
-                    itemBuilder: (context, i) {
-                      final url = images[i];
-                      final isMain = url == mainImage;
-                      return Stack(
-                        children: [
-                          CachedNetworkImage(
-                            imageUrl: url,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
+                  child: RadioGroup<String?>(
+                    groupValue: mainImage,
+                    onChanged: (v) => setStateDialog(() => mainImage = v),
+                    child: GridView.builder(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
                           ),
-                          if (isMain)
-                            const Positioned(
+                      itemCount: images.length,
+                      itemBuilder: (context, i) {
+                        final url = images[i];
+                        final isMain = url == mainImage;
+                        return Stack(
+                          children: [
+                            CachedNetworkImage(
+                              imageUrl: url,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              height: double.infinity,
+                            ),
+                            if (isMain)
+                              const Positioned(
+                                top: 4,
+                                right: 4,
+                                child: Icon(Icons.star, color: Colors.amber),
+                              ),
+                            Positioned(
                               top: 4,
+                              left: 4,
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () =>
+                                    setStateDialog(() => images.removeAt(i)),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 4,
                               right: 4,
-                              child: Icon(Icons.star, color: Colors.amber),
+                              child: Radio<String>(value: url),
                             ),
-                          Positioned(
-                            top: 4,
-                            left: 4,
-                            child: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () =>
-                                  setStateDialog(() => images.removeAt(i)),
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 4,
-                            right: 4,
-                            child: Radio<String>(
-                              value: url,
-                              groupValue: mainImage,
-                              onChanged: (v) =>
-                                  setStateDialog(() => mainImage = v),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
@@ -201,7 +201,7 @@ class _ServicesTabState extends State<ServicesTab> {
                   'images': images,
                   'mainImage': mainImage,
                 });
-                Navigator.pop(ctx);
+                if (ctx.mounted) Navigator.pop(ctx);
               },
               child: const Text('حفظ'),
             ),
@@ -264,7 +264,7 @@ class _ServicesTabState extends State<ServicesTab> {
                             file.name,
                             docId: 'services',
                           );
-                          if (url != null) {
+                          if (url != null && context.mounted) {
                             setStateDialog(() => images.add(url));
                           }
                         }
@@ -277,52 +277,51 @@ class _ServicesTabState extends State<ServicesTab> {
                 if (images.isNotEmpty)
                   SizedBox(
                     height: 100,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: images.length,
-                      itemBuilder: (context, i) {
-                        return Stack(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: CachedNetworkImage(
-                                imageUrl: images[i],
-                                width: 80,
-                                height: 80,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                            Positioned(
-                              top: 0,
-                              right: 0,
-                              child: IconButton(
-                                icon: const Icon(
-                                  Icons.delete,
-                                  color: Colors.red,
+                    child: RadioGroup<String?>(
+                      groupValue: mainImage,
+                      onChanged: (v) => setStateDialog(() => mainImage = v),
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: images.length,
+                        itemBuilder: (context, i) {
+                          return Stack(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: CachedNetworkImage(
+                                  imageUrl: images[i],
+                                  width: 80,
+                                  height: 80,
+                                  fit: BoxFit.cover,
                                 ),
-                                onPressed: () =>
-                                    setStateDialog(() => images.removeAt(i)),
                               ),
-                            ),
-                            if (images[i] == mainImage)
-                              const Positioned(
+                              Positioned(
+                                top: 0,
+                                right: 0,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed: () =>
+                                      setStateDialog(() => images.removeAt(i)),
+                                ),
+                              ),
+                              if (images[i] == mainImage)
+                                const Positioned(
+                                  bottom: 0,
+                                  left: 0,
+                                  child: Icon(Icons.star, color: Colors.amber),
+                                ),
+                              Positioned(
                                 bottom: 0,
-                                left: 0,
-                                child: Icon(Icons.star, color: Colors.amber),
+                                right: 0,
+                                child: Radio<String>(value: images[i]),
                               ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Radio<String>(
-                                value: images[i],
-                                groupValue: mainImage,
-                                onChanged: (v) =>
-                                    setStateDialog(() => mainImage = v),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
+                            ],
+                          );
+                        },
+                      ),
                     ),
                   ),
               ],
@@ -347,7 +346,7 @@ class _ServicesTabState extends State<ServicesTab> {
                 } else {
                   await _firestore.collection('services').doc(id).update(data);
                 }
-                Navigator.pop(ctx);
+                if (ctx.mounted) Navigator.pop(ctx);
               },
               child: const Text('حفظ'),
             ),

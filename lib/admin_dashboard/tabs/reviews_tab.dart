@@ -8,7 +8,7 @@ class ReviewsTab extends StatefulWidget {
   const ReviewsTab({super.key});
 
   @override
-  _ReviewsTabState createState() => _ReviewsTabState();
+  State<ReviewsTab> createState() => _ReviewsTabState();
 }
 
 class _ReviewsTabState extends State<ReviewsTab> {
@@ -114,6 +114,7 @@ class _ReviewsTabState extends State<ReviewsTab> {
       String title = '';
       String description = '';
 
+      if (!mounted) return;
       final shouldUpload = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(

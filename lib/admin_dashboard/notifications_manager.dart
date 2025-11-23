@@ -117,66 +117,201 @@ class NotificationsManager {
   Future<void> showUnreadPopupIfExist(BuildContext context) async {
     if (unreadCount > 0) {
       await Future.delayed(const Duration(milliseconds: 500)); // Smooth entry
-      await showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.notifications_active,
-                  color: Colors.white,
-                  size: 24,
+      if (!context.mounted) return;
+      // Start the sequential flow directly
+      await showSequentialNotifications(context);
+    }
+  }
+
+  // ✅ New: Sequential Notification Flow
+  Future<void> showSequentialNotifications(BuildContext context) async {
+    final unreadNotifications = _notifications
+        .where((n) => !(n['isRead'] ?? false))
+        .toList();
+
+    if (unreadNotifications.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('لا توجد تنبيهات جديدة')));
+      }
+      return;
+    }
+
+    // Sort by timestamp (oldest first usually makes sense for processing, or newest first)
+    // Let's stick to the list order (which is descending/newest first in the listener)
+    // If we want to process oldest first, we should reverse.
+    // Let's process Newest First as per typical notification behavior.
+
+    for (int i = 0; i < unreadNotifications.length; i++) {
+      if (!context.mounted) return;
+
+      final notification = unreadNotifications[i];
+      final bool? shouldContinue = await _showSingleNotificationDialog(
+        context,
+        notification,
+        currentIndex: i + 1,
+        totalCount: unreadNotifications.length,
+      );
+
+      if (shouldContinue == null || !shouldContinue) {
+        // User closed the dialog or cancelled the sequence
+        break;
+      }
+    }
+  }
+
+  Future<bool?> _showSingleNotificationDialog(
+    BuildContext context,
+    Map<String, dynamic> notification, {
+    required int currentIndex,
+    required int totalCount,
+  }) async {
+    final appointmentId = notification['appointmentId'];
+    Map<String, dynamic>? appointmentData;
+
+    if (appointmentId != null) {
+      final doc = await _firestore
+          .collection('appointments')
+          .doc(appointmentId)
+          .get();
+      if (doc.exists) {
+        appointmentData = doc.data();
+      }
+    }
+
+    if (!context.mounted) return null;
+
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // Force action
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.pink[50],
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                '$currentIndex/$totalCount',
+                style: TextStyle(
+                  color: Colors.pink[800],
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
               ),
-              const SizedBox(width: 12),
-              Text(
-                'تنبيهات جديدة!',
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'تنبيه جديد',
                 style: TextStyle(
                   color: Colors.pink[800],
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ],
-          ),
-          content: Text(
-            'يوجد $unreadCount حجوزات جديدة بانتظار المراجعة.',
-            style: const TextStyle(fontSize: 16),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('لاحقًا'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                showNotificationsDialog(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pink[800],
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text('عرض التنبيهات'),
             ),
           ],
         ),
-      );
-    }
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                notification['message'] ?? '',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _formatTimestamp(notification['timestamp']),
+                style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              ),
+              const Divider(height: 24),
+              if (appointmentData != null) ...[
+                _buildInfoRow('الاسم', appointmentData['name']),
+                _buildInfoRow('الخدمة', appointmentData['service']),
+                _buildInfoRow('التاريخ', appointmentData['date']),
+                _buildInfoRow('الوقت', appointmentData['time']),
+              ] else
+                const Text(
+                  'تفاصيل الموعد غير متوفرة',
+                  style: TextStyle(color: Colors.red),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          // Action Buttons
+          if (appointmentData != null) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await _updateStatus(appointmentId!, 'accepted');
+                      await _markAsRead(notification['id'], true);
+                      if (ctx.mounted) Navigator.pop(ctx, true); // Continue
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('قبول'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      await _updateStatus(appointmentId!, 'rejected');
+                      await _markAsRead(notification['id'], true);
+                      if (ctx.mounted) Navigator.pop(ctx, true); // Continue
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('رفض'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () {
+                  // Close sequence
+                  Navigator.pop(ctx, false);
+                },
+                child: const Text('إغلاق الكل'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  // Mark as read and continue
+                  await _markAsRead(notification['id'], true);
+                  if (ctx.mounted) Navigator.pop(ctx, true);
+                },
+                child: const Text('تخطيط / التالي'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
-  // ✅ Show notifications dialog (updated UI)
+  // Kept for backward compatibility or manual access if needed,
+  // but updated to show the list if user explicitly asks for "All Notifications"
   void showNotificationsDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -201,13 +336,12 @@ class NotificationsManager {
                   ),
                 ),
                 child: const Text(
-                  'التنبيهات',
+                  'كل التنبيهات',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
-                  textAlign: TextAlign.center,
                 ),
               ),
               Expanded(
@@ -223,7 +357,7 @@ class NotificationsManager {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              'لا توجد تنبيهات جديدة',
+                              'لا توجد تنبيهات',
                               style: TextStyle(color: Colors.grey[600]),
                             ),
                           ],
@@ -284,9 +418,6 @@ class NotificationsManager {
                                   notification,
                                 );
                               },
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
                             ),
                           );
                         },
@@ -383,6 +514,7 @@ class NotificationsManager {
           .doc(appointmentId)
           .get();
       if (doc.exists) {
+        if (!context.mounted) return;
         Navigator.pop(context);
         showAppointmentDialog(context, appointmentId, doc.data()!);
       }
@@ -439,6 +571,7 @@ class NotificationsManager {
           ElevatedButton(
             onPressed: () async {
               await _updateStatus(docId, 'accepted');
+              if (!context.mounted) return;
               Navigator.pop(context);
               _showStatusSnackbar(context, 'تم قبول الموعد', Colors.green);
             },
@@ -542,6 +675,7 @@ class NotificationsManager {
             onPressed: () async {
               Navigator.pop(ctx);
               await _clearAllNotifications();
+              if (!context.mounted) return;
               Navigator.pop(context); // close notifications dialog
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),

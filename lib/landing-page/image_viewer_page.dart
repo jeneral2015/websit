@@ -68,7 +68,7 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                         ? CachedNetworkImage(
                             imageUrl: settings['logoUrl'],
                             fit: BoxFit.cover,
-                            placeholder: (_, __) => const Icon(
+                            placeholder: (context, url) => const Icon(
                               Icons.medical_services,
                               color: Colors.white,
                             ),

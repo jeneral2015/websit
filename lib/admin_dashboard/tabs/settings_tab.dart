@@ -12,7 +12,7 @@ class SettingsTab extends StatefulWidget {
   const SettingsTab({super.key, required this.notificationsManager});
 
   @override
-  _SettingsTabState createState() => _SettingsTabState();
+  State<SettingsTab> createState() => _SettingsTabState();
 }
 
 class _SettingsTabState extends State<SettingsTab> {
@@ -930,6 +930,7 @@ class _SettingsTabState extends State<SettingsTab> {
     _tempFeaturedReviewIds = [];
     _tempFeaturedRatingIds = [];
 
+    if (!mounted) return;
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('تم الحفظ بنجاح')));

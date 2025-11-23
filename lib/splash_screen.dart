@@ -46,13 +46,13 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _loadAllResources() async {
     try {
-      print('🚀 بدء تهيئة Firebase...');
+      debugPrint('🚀 بدء تهيئة Firebase...');
 
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
 
-      print('✅ Firebase تم التهيئة بنجاح');
+      debugPrint('✅ Firebase تم التهيئة بنجاح');
 
       final settingsDoc = await FirebaseFirestore.instance
           .collection('site_data')
@@ -60,12 +60,12 @@ class _SplashScreenState extends State<SplashScreen>
           .get()
           .timeout(const Duration(seconds: 10));
 
-      print('📄 حالة الإعدادات: ${settingsDoc.exists}');
+      debugPrint('📄 حالة الإعدادات: ${settingsDoc.exists}');
 
       Map<String, dynamic> loadedSettings = {};
       if (settingsDoc.exists && settingsDoc.data() != null) {
         loadedSettings = settingsDoc.data()!;
-        print('✅ تم تحميل الإعدادات من Firebase');
+        debugPrint('✅ تم تحميل الإعدادات من Firebase');
       }
 
       // Precache background
@@ -74,10 +74,10 @@ class _SplashScreenState extends State<SplashScreen>
         try {
           if (mounted) {
             await precacheImage(NetworkImage(bgUrl), context);
-            print('✅ تم تحميل الخلفية');
+            debugPrint('✅ تم تحميل الخلفية');
           }
         } catch (e) {
-          print('❌ خطأ في تحميل الخلفية: $e');
+          debugPrint('❌ خطأ في تحميل الخلفية: $e');
         }
       }
 
@@ -87,10 +87,10 @@ class _SplashScreenState extends State<SplashScreen>
         try {
           if (mounted) {
             await precacheImage(NetworkImage(logoUrl), context);
-            print('✅ تم تحميل اللوجو');
+            debugPrint('✅ تم تحميل اللوجو');
           }
         } catch (e) {
-          print('❌ خطأ في تحميل اللوجو: $e');
+          debugPrint('❌ خطأ في تحميل اللوجو: $e');
         }
       }
 
@@ -122,9 +122,9 @@ class _SplashScreenState extends State<SplashScreen>
             } catch (_) {}
           }
         }
-        print('✅ تم تحميل الخدمات');
+        debugPrint('✅ تم تحميل الخدمات');
       } catch (e) {
-        print('❌ خطأ في تحميل الخدمات: $e');
+        debugPrint('❌ خطأ في تحميل الخدمات: $e');
       }
 
       // Precache gallery
@@ -144,9 +144,9 @@ class _SplashScreenState extends State<SplashScreen>
             } catch (_) {}
           }
         }
-        print('✅ تم تحميل المعرض');
+        debugPrint('✅ تم تحميل المعرض');
       } catch (e) {
-        print('❌ خطأ في تحميل المعرض: $e');
+        debugPrint('❌ خطأ في تحميل المعرض: $e');
       }
 
       // Precache reviews
@@ -157,9 +157,9 @@ class _SplashScreenState extends State<SplashScreen>
             .limit(5)
             .get()
             .timeout(const Duration(seconds: 10));
-        print('✅ تم تحميل التقييمات');
+        debugPrint('✅ تم تحميل التقييمات');
       } catch (e) {
-        print('❌ خطأ في تحميل التقييمات: $e');
+        debugPrint('❌ خطأ في تحميل التقييمات: $e');
       }
 
       if (!mounted) return;
@@ -193,7 +193,7 @@ class _SplashScreenState extends State<SplashScreen>
         );
       }
     } catch (e) {
-      print('💥 خطأ عام في التحميل: $e');
+      debugPrint('💥 خطأ عام في التحميل: $e');
 
       if (!mounted) return;
 

@@ -9,7 +9,7 @@ class GalleryTab extends StatefulWidget {
   const GalleryTab({super.key});
 
   @override
-  _GalleryTabState createState() => _GalleryTabState();
+  State<GalleryTab> createState() => _GalleryTabState();
 }
 
 class _GalleryTabState extends State<GalleryTab> {
@@ -115,6 +115,7 @@ class _GalleryTabState extends State<GalleryTab> {
       String title = '';
       String description = '';
 
+      if (!mounted) return;
       final shouldUpload = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(

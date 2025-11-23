@@ -54,7 +54,7 @@ class _RatingsPageState extends State<RatingsPage> {
                         ? CachedNetworkImage(
                             imageUrl: settings['logoUrl'],
                             fit: BoxFit.cover,
-                            placeholder: (_, __) => const Icon(
+                            placeholder: (context, url) => const Icon(
                               Icons.medical_services,
                               color: Colors.white,
                             ),
@@ -386,7 +386,7 @@ class _RatingsPageState extends State<RatingsPage> {
                                   comment: comment,
                                   stars: stars,
                                 );
-                                if (mounted) Navigator.pop(context);
+                                if (context.mounted) Navigator.pop(context);
                               }
                             },
                             style: ElevatedButton.styleFrom(

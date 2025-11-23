@@ -9,11 +9,11 @@ import 'gallery_page.dart';
 import 'reviews_page.dart';
 import 'ratings_page.dart';
 import 'booking_form.dart';
-import 'package:websit/admin_dashboard/admin_dashboard.dart';
 import 'glowing_button.dart';
 import 'responsive_utils.dart';
 import 'package:websit/utils/session_manager.dart';
 import 'package:websit/landing-page/widgets/auto_play_carousel.dart';
+import 'package:websit/auth/auth_gate.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -127,7 +127,7 @@ class _LandingPageState extends State<LandingPage> {
               IconButton(
                 onPressed: () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const AdminDashboard()),
+                  MaterialPageRoute(builder: (_) => const AuthGate()),
                 ),
                 icon: Icon(
                   Icons.admin_panel_settings,
@@ -296,7 +296,8 @@ class _LandingPageState extends State<LandingPage> {
               duration: const Duration(milliseconds: 1500),
               opacity: 1,
               child: Text(
-                settings['experience'] ?? 'بخبرة اكثر من 15 عام فى احدث التقنيات',
+                settings['experience'] ??
+                    'بخبرة اكثر من 15 عام فى احدث التقنيات',
                 style: TextStyle(
                   fontSize: getResponsiveSize(context, 14, 18, 22),
                   color: const Color.fromARGB(255, 190, 16, 74),
@@ -739,8 +740,11 @@ class _LandingPageState extends State<LandingPage> {
                             scale: value,
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 300),
-                              transform: Matrix4.identity()
-                                ..scale(_isHovered[index] == true ? 1.05 : 1.0),
+                              transform: Matrix4.diagonal3Values(
+                                _isHovered[index] == true ? 1.05 : 1.0,
+                                _isHovered[index] == true ? 1.05 : 1.0,
+                                _isHovered[index] == true ? 1.05 : 1.0,
+                              ),
                               child: child,
                             ),
                           );
@@ -800,7 +804,7 @@ class _LandingPageState extends State<LandingPage> {
       context: context,
       barrierDismissible: false,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
+        builder: (dialogContext, setState) {
           return Dialog(
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
@@ -951,7 +955,7 @@ class _LandingPageState extends State<LandingPage> {
                       children: [
                         Expanded(
                           child: TextButton(
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: () => Navigator.pop(dialogContext),
                             style: TextButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
@@ -972,7 +976,9 @@ class _LandingPageState extends State<LandingPage> {
                           child: ElevatedButton(
                             onPressed: () async {
                               if (clientName.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                ScaffoldMessenger.of(
+                                  dialogContext,
+                                ).showSnackBar(
                                   const SnackBar(
                                     content: Text('الرجاء إدخال الاسم'),
                                     backgroundColor: Colors.red,
@@ -991,9 +997,11 @@ class _LandingPageState extends State<LandingPage> {
                                     'createdAt': FieldValue.serverTimestamp(),
                                   });
 
-                                  if (mounted) {
-                                    Navigator.pop(context);
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                  if (dialogContext.mounted) {
+                                    Navigator.pop(dialogContext);
+                                    ScaffoldMessenger.of(
+                                      dialogContext,
+                                    ).showSnackBar(
                                       const SnackBar(
                                         content: Text('شكراً لتقييمك!'),
                                         backgroundColor: Colors.green,
@@ -1001,8 +1009,10 @@ class _LandingPageState extends State<LandingPage> {
                                     );
                                   }
                                 } catch (e) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
+                                  if (dialogContext.mounted) {
+                                    ScaffoldMessenger.of(
+                                      dialogContext,
+                                    ).showSnackBar(
                                       const SnackBar(
                                         content: Text(
                                           'فشل إرسال التقييم، يرجى المحاولة مرة أخرى',
@@ -1431,7 +1441,9 @@ class _AnimatedIconBtnState extends State<_AnimatedIconBtn>
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: widget.color.withValues(alpha: _isHovered ? 0.6 : 0.3),
+                      color: widget.color.withValues(
+                        alpha: _isHovered ? 0.6 : 0.3,
+                      ),
                       blurRadius: _isHovered ? 15 : 8,
                       offset: const Offset(0, 4),
                     ),
@@ -1460,4 +1472,3 @@ class _AnimatedIconBtnState extends State<_AnimatedIconBtn>
     );
   }
 }
-// End of file
