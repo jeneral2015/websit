@@ -52,6 +52,8 @@ dependencies:
   shared_preferences: ^2.2.2
   firebase_messaging: ^16.0.3
   image_picker: ^1.2.1
+  fl_chart: ^0.68.0  # للرسوم البيانية
+  responsive_builder: ^0.7.1
 
 
 dev_dependencies:

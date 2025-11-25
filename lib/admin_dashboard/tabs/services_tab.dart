@@ -136,52 +136,58 @@ class _ServicesTabState extends State<ServicesTab> {
                 ),
                 const SizedBox(height: 16),
                 Expanded(
-                  child: RadioGroup<String?>(
+                  child: RadioGroup<String>(
                     groupValue: mainImage,
-                    onChanged: (v) => setStateDialog(() => mainImage = v),
-                    child: GridView.builder(
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 3,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
-                          ),
+                    onChanged: (val) {
+                      setStateDialog(() {
+                        mainImage = val;
+                      });
+                    },
+                    child: ListView.separated(
                       itemCount: images.length,
+                      separatorBuilder: (ctx, i) => const Divider(),
                       itemBuilder: (context, i) {
                         final url = images[i];
                         final isMain = url == mainImage;
-                        return Stack(
-                          children: [
-                            CachedNetworkImage(
-                              imageUrl: url,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: double.infinity,
-                            ),
-                            if (isMain)
-                              const Positioned(
-                                top: 4,
-                                right: 4,
-                                child: Icon(Icons.star, color: Colors.amber),
-                              ),
-                            Positioned(
-                              top: 4,
-                              left: 4,
-                              child: IconButton(
-                                icon: const Icon(
-                                  Icons.delete,
-                                  color: Colors.red,
+                        return RadioListTile<String>(
+                          value: url,
+                          title: SizedBox(
+                            height: 100,
+                            child: Row(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: CachedNetworkImage(
+                                    imageUrl: url,
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                    placeholder: (context, url) => const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                    errorWidget: (context, url, error) =>
+                                        const Icon(Icons.error),
+                                  ),
                                 ),
-                                onPressed: () =>
-                                    setStateDialog(() => images.removeAt(i)),
-                              ),
+                                const SizedBox(width: 16),
+                                if (isMain)
+                                  const Icon(Icons.star, color: Colors.amber),
+                              ],
                             ),
-                            Positioned(
-                              bottom: 4,
-                              right: 4,
-                              child: Radio<String>(value: url),
-                            ),
-                          ],
+                          ),
+                          secondary: IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () {
+                              setStateDialog(() {
+                                images.removeAt(i);
+                                if (mainImage == url) {
+                                  mainImage = images.isNotEmpty
+                                      ? images.first
+                                      : null;
+                                }
+                              });
+                            },
+                          ),
                         );
                       },
                     ),
@@ -237,6 +243,7 @@ class _ServicesTabState extends State<ServicesTab> {
           title: Text(id == null ? 'إضافة خدمة' : 'تعديل خدمة'),
           content: SizedBox(
             width: 500,
+            height: 500,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -275,50 +282,61 @@ class _ServicesTabState extends State<ServicesTab> {
                 ),
                 const SizedBox(height: 16),
                 if (images.isNotEmpty)
-                  SizedBox(
-                    height: 100,
-                    child: RadioGroup<String?>(
+                  Expanded(
+                    child: RadioGroup<String>(
                       groupValue: mainImage,
-                      onChanged: (v) => setStateDialog(() => mainImage = v),
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
+                      onChanged: (val) {
+                        setStateDialog(() {
+                          mainImage = val;
+                        });
+                      },
+                      child: ListView.separated(
                         itemCount: images.length,
+                        separatorBuilder: (ctx, i) => const Divider(),
                         itemBuilder: (context, i) {
-                          return Stack(
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: CachedNetworkImage(
-                                  imageUrl: images[i],
-                                  width: 80,
-                                  height: 80,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              Positioned(
-                                top: 0,
-                                right: 0,
-                                child: IconButton(
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
+                          final url = images[i];
+                          final isMain = url == mainImage;
+                          return RadioListTile<String>(
+                            value: url,
+                            title: SizedBox(
+                              height: 80,
+                              child: Row(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: CachedNetworkImage(
+                                      imageUrl: url,
+                                      width: 80,
+                                      height: 80,
+                                      fit: BoxFit.cover,
+                                      placeholder: (context, url) =>
+                                          const Center(
+                                            child: CircularProgressIndicator(),
+                                          ),
+                                      errorWidget: (context, url, error) =>
+                                          const Icon(Icons.error),
+                                    ),
                                   ),
-                                  onPressed: () =>
-                                      setStateDialog(() => images.removeAt(i)),
-                                ),
+                                  if (isMain) ...[
+                                    const SizedBox(width: 16),
+                                    const Icon(Icons.star, color: Colors.amber),
+                                  ],
+                                ],
                               ),
-                              if (images[i] == mainImage)
-                                const Positioned(
-                                  bottom: 0,
-                                  left: 0,
-                                  child: Icon(Icons.star, color: Colors.amber),
-                                ),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: Radio<String>(value: images[i]),
-                              ),
-                            ],
+                            ),
+                            secondary: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () {
+                                setStateDialog(() {
+                                  images.removeAt(i);
+                                  if (mainImage == url) {
+                                    mainImage = images.isNotEmpty
+                                        ? images.first
+                                        : null;
+                                  }
+                                });
+                              },
+                            ),
                           );
                         },
                       ),

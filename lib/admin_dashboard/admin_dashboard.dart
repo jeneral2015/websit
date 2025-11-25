@@ -46,8 +46,8 @@ class _AdminDashboardState extends State<AdminDashboard>
 
     // Listen to notifications stream and show popup when unread notifications arrive
     _notificationSubscription = _notificationsManager.unreadNotificationsStream
-        .listen((count) {
-          if (!_hasShownInitialNotifications && count > 0) {
+        .listen((unreadCount) {
+          if (!_hasShownInitialNotifications && unreadCount > 0) {
             _hasShownInitialNotifications = true;
             // Use a small delay to ensure UI is ready
             Future.delayed(const Duration(milliseconds: 800), () {
@@ -154,13 +154,18 @@ class _AdminDashboardState extends State<AdminDashboard>
                 tooltip: 'تسجيل الخروج',
               ),
             ],
-            bottom: TabBar(
-              controller: _tabController,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.black,
-              indicatorColor: Colors.white,
-              isScrollable: true,
-              tabs: _tabNames.map((name) => Tab(text: name)).toList(),
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(kToolbarHeight),
+              child: Center(
+                child: TabBar(
+                  controller: _tabController,
+                  labelColor: Colors.white,
+                  unselectedLabelColor: Colors.black,
+                  indicatorColor: Colors.white,
+                  isScrollable: true,
+                  tabs: _tabNames.map((name) => Tab(text: name)).toList(),
+                ),
+              ),
             ),
           ),
           body: Stack(

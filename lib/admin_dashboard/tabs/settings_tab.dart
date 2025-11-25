@@ -19,13 +19,13 @@ class _SettingsTabState extends State<SettingsTab> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final DropboxUploader _dropboxUploader = DropboxUploader();
 
-  // متغيرات لحفظ حالة الشيك بوكس محلياً
+  // Temporary lists for featured items
   List<String> _tempFeaturedServiceIds = [];
   List<String> _tempFeaturedGalleryIds = [];
   List<String> _tempFeaturedReviewIds = [];
   List<String> _tempFeaturedRatingIds = [];
 
-  // متغيرات النصوص
+  // Text variables
   String _logoUrl = '';
   String _backgroundUrl = '';
   String _doctorName = 'د/ سارة أحمد حامد';
@@ -43,6 +43,8 @@ class _SettingsTabState extends State<SettingsTab> {
 
   List<Map<String, dynamic>> _weeklySchedule = [];
 
+  bool _isDataLoaded = false;
+
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot>(
@@ -52,133 +54,191 @@ class _SettingsTabState extends State<SettingsTab> {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (snapshot.hasData && snapshot.data!.exists) {
+        if (snapshot.hasData && snapshot.data!.exists && !_isDataLoaded) {
           var settings = snapshot.data!.data() as Map<String, dynamic>;
           _initializeData(settings);
+          _isDataLoaded = true;
         }
 
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildSectionTitle('الصور والشعار'),
-                Row(
-                  children: [
-                    _buildImageUploader(
-                      'تغيير اللوجو',
-                      _logoUrl,
-                      () => _uploadFile('logoUrl'),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isWideScreen = constraints.maxWidth > 800;
+
+            return SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: isWideScreen ? constraints.maxWidth * 0.15 : 20,
+                vertical: 20,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _buildAnimatedSection(
+                    title: 'الصور والشعار',
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            children: [
+                              _buildImageUploader(
+                                'تغيير اللوجو',
+                                _logoUrl,
+                                () => _uploadFile('logoUrl'),
+                              ),
+                              if (_logoUrl.isNotEmpty) ...[
+                                const SizedBox(height: 16),
+                                _buildImagePreview(_logoUrl, 'اللوجو'),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              _buildImageUploader(
+                                'تغيير الخلفية',
+                                _backgroundUrl,
+                                () => _uploadFile('backgroundUrl'),
+                              ),
+                              if (_backgroundUrl.isNotEmpty) ...[
+                                const SizedBox(height: 16),
+                                _buildImagePreview(_backgroundUrl, 'الخلفية'),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 16),
-                    _buildImageUploader(
-                      'تغيير الخلفية',
-                      _backgroundUrl,
-                      () => _uploadFile('backgroundUrl'),
+                  ),
+                  const SizedBox(height: 30),
+                  _buildAnimatedSection(
+                    title: 'بيانات الطبيب',
+                    child: Column(
+                      children: [
+                        _buildTextField(
+                          'اسم الطبيب',
+                          _doctorName,
+                          (v) => _doctorName = v,
+                        ),
+                        _buildTextField(
+                          'مجال العمل',
+                          _clinicWord,
+                          (v) => _clinicWord = v,
+                        ),
+                        _buildTextField(
+                          'رسالة الترحيب',
+                          _welcomeMessage,
+                          (v) => _welcomeMessage = v,
+                        ),
+                        _buildTextField(
+                          'التخصص',
+                          _specialty,
+                          (v) => _specialty = v,
+                        ),
+                        _buildTextField(
+                          'الخبرة',
+                          _experience,
+                          (v) => _experience = v,
+                        ),
+                        _buildTextField(
+                          'نبذة عن الطبيب',
+                          _aboutText,
+                          (v) => _aboutText = v,
+                          maxLines: 4,
+                        ),
+                        _buildTextField(
+                          'رقم الهاتف',
+                          _phone,
+                          (v) => _phone = v,
+                        ),
+                        _buildTextField(
+                          'رابط الموقع (Google Maps)',
+                          _location,
+                          (v) => _location = v,
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 16,
-                  children: [
-                    if (_logoUrl.isNotEmpty)
-                      _buildImagePreview(_logoUrl, 'اللوجو'),
-                    if (_backgroundUrl.isNotEmpty)
-                      _buildImagePreview(_backgroundUrl, 'الخلفية'),
-                  ],
-                ),
-                const SizedBox(height: 30),
-                _buildSectionTitle('بيانات الطبيب'),
-                _buildTextField(
-                  'اسم الطبيب',
-                  _doctorName,
-                  (v) => _doctorName = v,
-                ),
-                _buildTextField(
-                  'مجال العمل',
-                  _clinicWord,
-                  (v) => _clinicWord = v,
-                ),
-                _buildTextField(
-                  'رسالة الترحيب',
-                  _welcomeMessage,
-                  (v) => _welcomeMessage = v,
-                ),
-                _buildTextField('التخصص', _specialty, (v) => _specialty = v),
-                _buildTextField('الخبرة', _experience, (v) => _experience = v),
-                _buildTextField(
-                  'نبذة عن الطبيب',
-                  _aboutText,
-                  (v) => _aboutText = v,
-                  maxLines: 4,
-                ),
-                _buildTextField('رقم الهاتف', _phone, (v) => _phone = v),
-                _buildTextField(
-                  'رابط الموقع (Google Maps)',
-                  _location,
-                  (v) => _location = v,
-                ),
-                const SizedBox(height: 30),
-                _buildSectionTitle('روابط وسائل التواصل الاجتماعي'),
-                _buildTextField(
-                  'رابط فيسبوك',
-                  _facebookUrl,
-                  (v) => _facebookUrl = v,
-                  icon: Icons.facebook,
-                ),
-                _buildTextField(
-                  'رابط إنستغرام',
-                  _instagramUrl,
-                  (v) => _instagramUrl = v,
-                  icon: FontAwesomeIcons.instagram,
-                ),
-                _buildTextField(
-                  'رابط تيك توك',
-                  _tiktokUrl,
-                  (v) => _tiktokUrl = v,
-                  icon: FontAwesomeIcons.tiktok,
-                ),
-                _buildTextField(
-                  'رقم واتساب',
-                  _whatsappUrl,
-                  (v) => _whatsappUrl = v,
-                  icon: FontAwesomeIcons.whatsapp,
-                ),
-                const SizedBox(height: 30),
-                _buildSectionTitle('جدول العمل الأسبوعي'),
-                _buildWeeklyScheduleTable(),
-                const SizedBox(height: 30),
-                _buildSectionTitle(
-                  'الخدمات المميزة في الصفحة الرئيسية (3 فقط)',
-                ),
-                _buildFeaturedServicesSelector(),
-                const SizedBox(height: 20),
-                _buildSectionTitle(
-                  'صور المعرض المميزة في الصفحة الرئيسية (3 فقط)',
-                ),
-                _buildFeaturedGallerySelector(),
-                const SizedBox(height: 20),
-                _buildSectionTitle(
-                  'صور آراء العملاء المميزة في الصفحة الرئيسية (3 فقط)',
-                ),
-                _buildFeaturedReviewsSelector(),
-                _buildFeaturedReviewsSelector(),
-                const SizedBox(height: 20),
-                _buildSectionTitle(
-                  'التقييمات المميزة في الصفحة الرئيسية (4 فقط)',
-                ),
-                _buildFeaturedRatingsSelector(),
-                const SizedBox(height: 30),
-                ElevatedButton(
-                  onPressed: _saveSettings,
-                  child: const Text('حفظ التغييرات'),
-                ),
-              ],
-            ),
-          ),
+                  ),
+                  const SizedBox(height: 30),
+                  _buildAnimatedSection(
+                    title: 'روابط وسائل التواصل الاجتماعي',
+                    child: Column(
+                      children: [
+                        _buildTextField(
+                          'رابط فيسبوك',
+                          _facebookUrl,
+                          (v) => _facebookUrl = v,
+                          icon: Icons.facebook,
+                        ),
+                        _buildTextField(
+                          'رابط إنستغرام',
+                          _instagramUrl,
+                          (v) => _instagramUrl = v,
+                          icon: FontAwesomeIcons.instagram,
+                        ),
+                        _buildTextField(
+                          'رابط تيك توك',
+                          _tiktokUrl,
+                          (v) => _tiktokUrl = v,
+                          icon: FontAwesomeIcons.tiktok,
+                        ),
+                        _buildTextField(
+                          'رقم واتساب',
+                          _whatsappUrl,
+                          (v) => _whatsappUrl = v,
+                          icon: FontAwesomeIcons.whatsapp,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                  _buildAnimatedSection(
+                    title: 'جدول العمل الأسبوعي',
+                    child: _buildWeeklyScheduleTable(isWideScreen),
+                  ),
+                  const SizedBox(height: 30),
+                  _buildAnimatedSection(
+                    title: 'الخدمات المميزة في الصفحة الرئيسية (3 فقط)',
+                    child: _buildFeaturedServicesSelector(constraints.maxWidth),
+                  ),
+                  const SizedBox(height: 30),
+                  _buildAnimatedSection(
+                    title: 'صور المعرض المميزة في الصفحة الرئيسية (3 فقط)',
+                    child: _buildFeaturedGallerySelector(constraints.maxWidth),
+                  ),
+                  const SizedBox(height: 30),
+                  _buildAnimatedSection(
+                    title:
+                        'صور آراء العملاء المميزة في الصفحة الرئيسية (3 فقط)',
+                    child: _buildFeaturedReviewsSelector(constraints.maxWidth),
+                  ),
+                  const SizedBox(height: 30),
+                  _buildAnimatedSection(
+                    title: 'التقييمات المميزة في الصفحة الرئيسية (4 فقط)',
+                    child: _buildFeaturedRatingsSelector(constraints.maxWidth),
+                  ),
+                  const SizedBox(height: 30),
+                  ElevatedButton(
+                    onPressed: _saveSettings,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 32,
+                        vertical: 16,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'حفظ التغييرات',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
@@ -225,7 +285,6 @@ class _SettingsTabState extends State<SettingsTab> {
               .toList()
         : [];
 
-    // تهيئة المتغيرات المؤقتة إذا كانت فارغة
     if (_tempFeaturedServiceIds.isEmpty) {
       _tempFeaturedServiceIds = List.from(featuredServiceIds);
     }
@@ -268,7 +327,292 @@ class _SettingsTabState extends State<SettingsTab> {
     }
   }
 
-  Widget _buildFeaturedServicesSelector() {
+  Widget _buildAnimatedSection({required String title, required Widget child}) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withValues(alpha: 0.2),
+            spreadRadius: 2,
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.pink,
+            ),
+          ),
+          const SizedBox(height: 16),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageUploader(
+    String label,
+    String currentUrl,
+    VoidCallback onUpload,
+  ) {
+    return Column(
+      children: [
+        ElevatedButton(
+          onPressed: onUpload,
+          style: ElevatedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          ),
+          child: Text(label),
+        ),
+        if (currentUrl.isNotEmpty) const SizedBox(height: 8),
+        if (currentUrl.isNotEmpty)
+          const Text('تم الرفع', style: TextStyle(color: Colors.green)),
+      ],
+    );
+  }
+
+  Widget _buildImagePreview(String url, String label) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: CachedNetworkImage(
+            imageUrl: url,
+            width: 120,
+            height: 120,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => const CircularProgressIndicator(),
+            errorWidget: (context, url, error) => const Icon(Icons.error),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextField(
+    String label,
+    String value,
+    Function(String) onChanged, {
+    int maxLines = 1,
+    IconData? icon,
+  }) {
+    final controller = TextEditingController(text: value);
+    controller.addListener(() => onChanged(controller.text));
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: controller,
+        maxLines: maxLines,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: icon != null ? Icon(icon, color: Colors.pink) : null,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.pink, width: 2),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _selectTime(
+    BuildContext context,
+    Map<String, dynamic> day,
+    String key,
+  ) async {
+    String initialTimeStr = day[key] as String;
+
+    // Replace Arabic numerals with English numerals for parsing
+    const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    for (int i = 0; i < arabicDigits.length; i++) {
+      initialTimeStr = initialTimeStr.replaceAll(arabicDigits[i], i.toString());
+    }
+
+    TimeOfDay initialTime = TimeOfDay.now();
+
+    try {
+      // Simple parsing for "9:00 AM" or "9:00 ص" format
+      final parts = initialTimeStr.split(' ');
+      if (parts.length == 2) {
+        final timeParts = parts[0].split(':');
+        int hour = int.parse(timeParts[0]);
+        final minute = int.parse(timeParts[1]);
+        final period = parts[1];
+
+        // Handle both Arabic (ص/م) and English (AM/PM) formats
+        if (period == 'م' || period == 'PM') {
+          if (hour != 12) hour += 12;
+        } else if (period == 'ص' || period == 'AM') {
+          if (hour == 12) hour = 0;
+        }
+
+        initialTime = TimeOfDay(hour: hour, minute: minute);
+      }
+    } catch (_) {
+      // Fallback to current time if parsing fails
+    }
+
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: initialTime,
+      builder: (context, child) {
+        return Localizations.override(
+          context: context,
+          locale: const Locale('en', 'US'),
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: const ColorScheme.light(primary: Colors.pink),
+            ),
+            child: child!,
+          ),
+        );
+      },
+    );
+
+    if (picked != null) {
+      // We can construct the string manually to ensure consistency with "AM/PM"
+      final hour = picked.hourOfPeriod == 0
+          ? 12
+          : picked.hourOfPeriod > 12
+          ? picked.hourOfPeriod - 12
+          : picked.hourOfPeriod;
+
+      final minute = picked.minute.toString().padLeft(2, '0');
+      final period = picked.period == DayPeriod.am ? 'AM' : 'PM';
+
+      // Ensure English numerals are used in the output string
+      final formattedTime = '$hour:$minute $period';
+
+      setState(() {
+        day[key] = formattedTime;
+      });
+    }
+  }
+
+  Widget _buildWeeklyScheduleTable(bool isWideScreen) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        columnSpacing: isWideScreen ? 60 : 30,
+        columns: const [
+          DataColumn(
+            label: Text('اليوم', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          DataColumn(
+            label: Text('مفعل', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          DataColumn(
+            label: Text(
+              'الموقع',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          DataColumn(
+            label: Text('من', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          DataColumn(
+            label: Text('إلى', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+        rows: _weeklySchedule.map((day) {
+          return DataRow(
+            cells: [
+              DataCell(Text(day['day'])),
+              DataCell(
+                Checkbox(
+                  value: day['enabled'],
+                  onChanged: (v) => setState(() => day['enabled'] = v ?? false),
+                ),
+              ),
+              DataCell(
+                TextFormField(
+                  initialValue: day['location'],
+                  onChanged: (v) => day['location'] = v,
+                ),
+              ),
+              DataCell(
+                InkWell(
+                  onTap: () => _selectTime(context, day, 'startTime'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey.shade400),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(day['startTime']),
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.access_time,
+                          size: 16,
+                          color: Colors.pink,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              DataCell(
+                InkWell(
+                  onTap: () => _selectTime(context, day, 'endTime'),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey.shade400),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(day['endTime']),
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.access_time,
+                          size: 16,
+                          color: Colors.pink,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildFeaturedServicesSelector(double screenWidth) {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore.collection('services').snapshots(),
       builder: (context, snapshot) {
@@ -277,13 +621,11 @@ class _SettingsTabState extends State<SettingsTab> {
 
         return StatefulBuilder(
           builder: (context, setStateSelector) {
-            final screenWidth = MediaQuery.of(context).size.width;
             final crossAxisCount = screenWidth > 1200
                 ? 4
                 : screenWidth > 600
                 ? 3
                 : 2;
-
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -310,21 +652,19 @@ class _SettingsTabState extends State<SettingsTab> {
                     setStateSelector(() {
                       if (isSelected) {
                         _tempFeaturedServiceIds.remove(id);
+                      } else if (_tempFeaturedServiceIds.length < 3) {
+                        _tempFeaturedServiceIds.add(id);
                       } else {
-                        if (_tempFeaturedServiceIds.length < 3) {
-                          _tempFeaturedServiceIds.add(id);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('يمكن اختيار 3 خدمات فقط'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('يمكن اختيار 3 خدمات فقط'),
+                          ),
+                        );
                       }
                     });
                   },
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
                     decoration: BoxDecoration(
                       border: Border.all(
                         color: isSelected ? Colors.pink : Colors.grey,
@@ -335,7 +675,6 @@ class _SettingsTabState extends State<SettingsTab> {
                     ),
                     child: Stack(
                       children: [
-                        // الصورة التي تملأ الكونتينر بالكامل
                         if (mainImage != null)
                           ClipRRect(
                             borderRadius: BorderRadius.circular(12),
@@ -344,29 +683,13 @@ class _SettingsTabState extends State<SettingsTab> {
                               fit: BoxFit.cover,
                               width: double.infinity,
                               height: double.infinity,
-                              placeholder: (context, url) => Container(
-                                color: Colors.grey[300],
-                                child: const Icon(Icons.image, size: 40),
-                              ),
-                              errorWidget: (context, url, error) => Container(
-                                color: Colors.grey[200],
-                                child: const Icon(Icons.broken_image, size: 40),
-                              ),
                             ),
                           )
                         else
                           Container(
                             color: Colors.grey[300],
-                            child: const Center(
-                              child: Icon(
-                                Icons.image,
-                                size: 40,
-                                color: Colors.grey,
-                              ),
-                            ),
+                            child: const Icon(Icons.image, size: 40),
                           ),
-
-                        // النص في الأسفل
                         Positioned(
                           bottom: 0,
                           left: 0,
@@ -374,18 +697,17 @@ class _SettingsTabState extends State<SettingsTab> {
                           child: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              borderRadius: const BorderRadius.only(
-                                bottomLeft: Radius.circular(12),
-                                bottomRight: Radius.circular(12),
-                              ),
                               color: Colors.black.withValues(alpha: 0.7),
+                              borderRadius: const BorderRadius.vertical(
+                                bottom: Radius.circular(12),
+                              ),
                             ),
                             child: Text(
                               data['title']?.toString() ?? '',
                               style: const TextStyle(
-                                fontSize: 12,
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
+                                fontSize: 12,
                               ),
                               textAlign: TextAlign.center,
                               maxLines: 2,
@@ -393,47 +715,31 @@ class _SettingsTabState extends State<SettingsTab> {
                             ),
                           ),
                         ),
-
-                        // الشيك بوكس
                         Positioned(
                           top: 8,
                           right: 8,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Checkbox(
-                              value: isSelected,
-                              onChanged: (selected) {
-                                setStateSelector(() {
-                                  if (selected == true) {
-                                    if (_tempFeaturedServiceIds.length < 3) {
-                                      _tempFeaturedServiceIds.add(id);
-                                    } else {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'يمكن اختيار 3 خدمات فقط',
-                                          ),
-                                          duration: Duration(seconds: 2),
-                                        ),
-                                      );
-                                    }
-                                  } else {
-                                    _tempFeaturedServiceIds.remove(id);
-                                  }
-                                });
-                              },
-                              shape: const CircleBorder(),
-                              activeColor: Colors.pink,
-                            ),
+                          child: Checkbox(
+                            value: isSelected,
+                            onChanged: (selected) {
+                              setStateSelector(() {
+                                if (selected == true &&
+                                    _tempFeaturedServiceIds.length < 3) {
+                                  _tempFeaturedServiceIds.add(id);
+                                } else if (selected == false) {
+                                  _tempFeaturedServiceIds.remove(id);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('يمكن اختيار 3 خدمات فقط'),
+                                    ),
+                                  );
+                                }
+                              });
+                            },
+                            shape: const CircleBorder(),
+                            activeColor: Colors.pink,
                           ),
                         ),
-
-                        // عداد الخدمات المختارة
                         if (_tempFeaturedServiceIds.isNotEmpty)
                           Positioned(
                             top: 8,
@@ -452,7 +758,6 @@ class _SettingsTabState extends State<SettingsTab> {
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
-                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
@@ -469,7 +774,7 @@ class _SettingsTabState extends State<SettingsTab> {
     );
   }
 
-  Widget _buildFeaturedGallerySelector() {
+  Widget _buildFeaturedGallerySelector(double screenWidth) {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore.collection('gallery').snapshots(),
       builder: (context, snapshot) {
@@ -477,14 +782,12 @@ class _SettingsTabState extends State<SettingsTab> {
         final images = snapshot.data!.docs;
 
         return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            final screenWidth = MediaQuery.of(context).size.width;
+          builder: (context, setStateSelector) {
             final crossAxisCount = screenWidth > 1200
                 ? 4
                 : screenWidth > 600
                 ? 3
                 : 2;
-
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -501,24 +804,22 @@ class _SettingsTabState extends State<SettingsTab> {
                 final isSelected = _tempFeaturedGalleryIds.contains(id);
                 return GestureDetector(
                   onTap: () {
-                    setStateDialog(() {
+                    setStateSelector(() {
                       if (isSelected) {
                         _tempFeaturedGalleryIds.remove(id);
+                      } else if (_tempFeaturedGalleryIds.length < 3) {
+                        _tempFeaturedGalleryIds.add(id);
                       } else {
-                        if (_tempFeaturedGalleryIds.length < 3) {
-                          _tempFeaturedGalleryIds.add(id);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('يمكن اختيار 3 صور فقط'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('يمكن اختيار 3 صور فقط'),
+                          ),
+                        );
                       }
                     });
                   },
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
                     decoration: BoxDecoration(
                       border: Border.all(
                         color: isSelected ? Colors.pink : Colors.grey,
@@ -536,57 +837,33 @@ class _SettingsTabState extends State<SettingsTab> {
                             fit: BoxFit.cover,
                             width: double.infinity,
                             height: double.infinity,
-                            placeholder: (context, url) => Container(
-                              color: Colors.grey[300],
-                              child: const Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                            ),
-                            errorWidget: (context, url, error) => Container(
-                              color: Colors.grey[200],
-                              child: const Icon(Icons.broken_image, size: 40),
-                            ),
                           ),
                         ),
                         Positioned(
                           top: 8,
                           right: 8,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Checkbox(
-                              value: isSelected,
-                              onChanged: (selected) {
-                                setStateDialog(() {
-                                  if (selected == true) {
-                                    if (_tempFeaturedGalleryIds.length < 3) {
-                                      _tempFeaturedGalleryIds.add(id);
-                                    } else {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'يمكن اختيار 3 صور فقط',
-                                          ),
-                                          duration: Duration(seconds: 2),
-                                        ),
-                                      );
-                                    }
-                                  } else {
-                                    _tempFeaturedGalleryIds.remove(id);
-                                  }
-                                });
-                              },
-                              shape: const CircleBorder(),
-                              activeColor: Colors.pink,
-                            ),
+                          child: Checkbox(
+                            value: isSelected,
+                            onChanged: (selected) {
+                              setStateSelector(() {
+                                if (selected == true &&
+                                    _tempFeaturedGalleryIds.length < 3) {
+                                  _tempFeaturedGalleryIds.add(id);
+                                } else if (selected == false) {
+                                  _tempFeaturedGalleryIds.remove(id);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('يمكن اختيار 3 صور فقط'),
+                                    ),
+                                  );
+                                }
+                              });
+                            },
+                            shape: const CircleBorder(),
+                            activeColor: Colors.pink,
                           ),
                         ),
-
-                        // عداد الصور المختارة
                         if (_tempFeaturedGalleryIds.isNotEmpty)
                           Positioned(
                             top: 8,
@@ -605,7 +882,6 @@ class _SettingsTabState extends State<SettingsTab> {
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
-                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
@@ -622,7 +898,7 @@ class _SettingsTabState extends State<SettingsTab> {
     );
   }
 
-  Widget _buildFeaturedReviewsSelector() {
+  Widget _buildFeaturedReviewsSelector(double screenWidth) {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore.collection('reviews').snapshots(),
       builder: (context, snapshot) {
@@ -630,14 +906,12 @@ class _SettingsTabState extends State<SettingsTab> {
         final images = snapshot.data!.docs;
 
         return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            final screenWidth = MediaQuery.of(context).size.width;
+          builder: (context, setStateSelector) {
             final crossAxisCount = screenWidth > 1200
                 ? 4
                 : screenWidth > 600
                 ? 3
                 : 2;
-
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -654,24 +928,22 @@ class _SettingsTabState extends State<SettingsTab> {
                 final isSelected = _tempFeaturedReviewIds.contains(id);
                 return GestureDetector(
                   onTap: () {
-                    setStateDialog(() {
+                    setStateSelector(() {
                       if (isSelected) {
                         _tempFeaturedReviewIds.remove(id);
+                      } else if (_tempFeaturedReviewIds.length < 3) {
+                        _tempFeaturedReviewIds.add(id);
                       } else {
-                        if (_tempFeaturedReviewIds.length < 3) {
-                          _tempFeaturedReviewIds.add(id);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('يمكن اختيار 3 آراء فقط'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('يمكن اختيار 3 آراء فقط'),
+                          ),
+                        );
                       }
                     });
                   },
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
                     decoration: BoxDecoration(
                       border: Border.all(
                         color: isSelected ? Colors.pink : Colors.grey,
@@ -689,57 +961,33 @@ class _SettingsTabState extends State<SettingsTab> {
                             fit: BoxFit.cover,
                             width: double.infinity,
                             height: double.infinity,
-                            placeholder: (context, url) => Container(
-                              color: Colors.grey[300],
-                              child: const Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                            ),
-                            errorWidget: (context, url, error) => Container(
-                              color: Colors.grey[200],
-                              child: const Icon(Icons.broken_image, size: 40),
-                            ),
                           ),
                         ),
                         Positioned(
                           top: 8,
                           right: 8,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Checkbox(
-                              value: isSelected,
-                              onChanged: (selected) {
-                                setStateDialog(() {
-                                  if (selected == true) {
-                                    if (_tempFeaturedReviewIds.length < 3) {
-                                      _tempFeaturedReviewIds.add(id);
-                                    } else {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'يمكن اختيار 3 آراء فقط',
-                                          ),
-                                          duration: Duration(seconds: 2),
-                                        ),
-                                      );
-                                    }
-                                  } else {
-                                    _tempFeaturedReviewIds.remove(id);
-                                  }
-                                });
-                              },
-                              shape: const CircleBorder(),
-                              activeColor: Colors.pink,
-                            ),
+                          child: Checkbox(
+                            value: isSelected,
+                            onChanged: (selected) {
+                              setStateSelector(() {
+                                if (selected == true &&
+                                    _tempFeaturedReviewIds.length < 3) {
+                                  _tempFeaturedReviewIds.add(id);
+                                } else if (selected == false) {
+                                  _tempFeaturedReviewIds.remove(id);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('يمكن اختيار 3 آراء فقط'),
+                                    ),
+                                  );
+                                }
+                              });
+                            },
+                            shape: const CircleBorder(),
+                            activeColor: Colors.pink,
                           ),
                         ),
-
-                        // عداد الآراء المختارة
                         if (_tempFeaturedReviewIds.isNotEmpty)
                           Positioned(
                             top: 8,
@@ -758,7 +1006,6 @@ class _SettingsTabState extends State<SettingsTab> {
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
-                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
@@ -775,168 +1022,7 @@ class _SettingsTabState extends State<SettingsTab> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-    );
-  }
-
-  Widget _buildImageUploader(
-    String label,
-    String currentUrl,
-    VoidCallback onUpload,
-  ) {
-    return Column(
-      children: [
-        ElevatedButton(onPressed: onUpload, child: Text(label)),
-        if (currentUrl.isNotEmpty) const Text('تم الرفع'),
-      ],
-    );
-  }
-
-  Widget _buildImagePreview(String url, String label) {
-    return Column(
-      children: [
-        Text(label),
-        CachedNetworkImage(
-          imageUrl: url,
-          width: 100,
-          height: 100,
-          fit: BoxFit.cover,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTextField(
-    String label,
-    String value,
-    Function(String) onChanged, {
-    int maxLines = 1,
-    IconData? icon,
-  }) {
-    final controller = TextEditingController(text: value);
-    controller.addListener(() => onChanged(controller.text));
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextField(
-        controller: controller,
-        maxLines: maxLines,
-        decoration: InputDecoration(
-          labelText: label,
-          prefixIcon: icon != null ? Icon(icon) : null,
-          border: const OutlineInputBorder(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWeeklyScheduleTable() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        columns: const [
-          DataColumn(label: Text('اليوم')),
-          DataColumn(label: Text('مفعل')),
-          DataColumn(label: Text('الموقع')),
-          DataColumn(label: Text('من')),
-          DataColumn(label: Text('إلى')),
-        ],
-        rows: _weeklySchedule.map((day) {
-          return DataRow(
-            cells: [
-              DataCell(Text(day['day'])),
-              DataCell(
-                Checkbox(
-                  value: day['enabled'],
-                  onChanged: (v) => setState(() => day['enabled'] = v ?? false),
-                ),
-              ),
-              DataCell(
-                TextFormField(
-                  initialValue: day['location'],
-                  onChanged: (v) => day['location'] = v,
-                ),
-              ),
-              DataCell(
-                TextFormField(
-                  initialValue: day['startTime'],
-                  onChanged: (v) => day['startTime'] = v,
-                ),
-              ),
-              DataCell(
-                TextFormField(
-                  initialValue: day['endTime'],
-                  onChanged: (v) => day['endTime'] = v,
-                ),
-              ),
-            ],
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Future<void> _uploadFile(String field) async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.image);
-    if (result != null && result.files.single.bytes != null) {
-      final url = await _dropboxUploader.uploadFile(
-        result.files.single.bytes!,
-        result.files.single.name,
-        docId: field,
-      );
-      if (url != null) {
-        await _firestore.collection('site_data').doc('settings').update({
-          field: url,
-        });
-        setState(() {
-          if (field == 'logoUrl') {
-            _logoUrl = url;
-          } else if (field == 'backgroundUrl') {
-            _backgroundUrl = url;
-          }
-        });
-      }
-    }
-  }
-
-  Future<void> _saveSettings() async {
-    await _firestore.collection('site_data').doc('settings').set({
-      'logoUrl': _logoUrl,
-      'backgroundUrl': _backgroundUrl,
-      'doctorName': _doctorName,
-      'specialty': _specialty,
-      'clinicWord': _clinicWord,
-      'welcomeMessage': _welcomeMessage,
-      'experience': _experience,
-      'aboutText': _aboutText,
-      'phone': _phone,
-      'location': _location,
-      'facebookUrl': _facebookUrl,
-      'instagramUrl': _instagramUrl,
-      'tiktokUrl': _tiktokUrl,
-      'whatsappUrl': _whatsappUrl,
-      'weeklySchedule': _weeklySchedule,
-      'featuredServiceIds': _tempFeaturedServiceIds,
-      'featuredGalleryIds': _tempFeaturedGalleryIds,
-      'featuredReviewIds': _tempFeaturedReviewIds,
-      'featuredRatingIds': _tempFeaturedRatingIds,
-    }, SetOptions(merge: true));
-
-    // إعادة تعيين المتغيرات المؤقتة بعد الحفظ
-    _tempFeaturedServiceIds = [];
-    _tempFeaturedGalleryIds = [];
-    _tempFeaturedReviewIds = [];
-    _tempFeaturedRatingIds = [];
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('تم الحفظ بنجاح')));
-  }
-
-  Widget _buildFeaturedRatingsSelector() {
+  Widget _buildFeaturedRatingsSelector(double screenWidth) {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore
           .collection('ratings')
@@ -947,14 +1033,12 @@ class _SettingsTabState extends State<SettingsTab> {
         final ratings = snapshot.data!.docs;
 
         return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            final screenWidth = MediaQuery.of(context).size.width;
+          builder: (context, setStateSelector) {
             final crossAxisCount = screenWidth > 1200
                 ? 4
                 : screenWidth > 600
                 ? 3
                 : 2;
-
             return GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -973,27 +1057,24 @@ class _SettingsTabState extends State<SettingsTab> {
                 final clientName = data['clientName'] ?? 'عميل';
                 final stars = data['stars'] ?? 5;
                 final comment = data['comment'] ?? '';
-
                 return GestureDetector(
                   onTap: () {
-                    setStateDialog(() {
+                    setStateSelector(() {
                       if (isSelected) {
                         _tempFeaturedRatingIds.remove(id);
+                      } else if (_tempFeaturedRatingIds.length < 4) {
+                        _tempFeaturedRatingIds.add(id);
                       } else {
-                        if (_tempFeaturedRatingIds.length < 4) {
-                          _tempFeaturedRatingIds.add(id);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('يمكن اختيار 4 تقييمات فقط'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('يمكن اختيار 4 تقييمات فقط'),
+                          ),
+                        );
                       }
                     });
                   },
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       border: Border.all(
@@ -1054,22 +1135,20 @@ class _SettingsTabState extends State<SettingsTab> {
                           child: Checkbox(
                             value: isSelected,
                             onChanged: (selected) {
-                              setStateDialog(() {
-                                if (selected == true) {
-                                  if (_tempFeaturedRatingIds.length < 4) {
-                                    _tempFeaturedRatingIds.add(id);
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'يمكن اختيار 4 تقييمات فقط',
-                                        ),
-                                        duration: Duration(seconds: 2),
-                                      ),
-                                    );
-                                  }
-                                } else {
+                              setStateSelector(() {
+                                if (selected == true &&
+                                    _tempFeaturedRatingIds.length < 4) {
+                                  _tempFeaturedRatingIds.add(id);
+                                } else if (selected == false) {
                                   _tempFeaturedRatingIds.remove(id);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'يمكن اختيار 4 تقييمات فقط',
+                                      ),
+                                    ),
+                                  );
                                 }
                               });
                             },
@@ -1077,7 +1156,6 @@ class _SettingsTabState extends State<SettingsTab> {
                             activeColor: Colors.pink,
                           ),
                         ),
-                        // Counter
                         if (_tempFeaturedRatingIds.isNotEmpty)
                           Positioned(
                             bottom: 0,
@@ -1096,7 +1174,6 @@ class _SettingsTabState extends State<SettingsTab> {
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 10,
-                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             ),
@@ -1111,5 +1188,60 @@ class _SettingsTabState extends State<SettingsTab> {
         );
       },
     );
+  }
+
+  Future<void> _uploadFile(String field) async {
+    final result = await FilePicker.platform.pickFiles(type: FileType.image);
+    if (result != null && result.files.single.bytes != null) {
+      final url = await _dropboxUploader.uploadFile(
+        result.files.single.bytes!,
+        result.files.single.name,
+        docId: field,
+      );
+      if (url != null) {
+        await _firestore.collection('site_data').doc('settings').update({
+          field: url,
+        });
+        setState(() {
+          if (field == 'logoUrl') _logoUrl = url;
+          if (field == 'backgroundUrl') _backgroundUrl = url;
+        });
+      }
+    }
+  }
+
+  Future<void> _saveSettings() async {
+    await _firestore.collection('site_data').doc('settings').set({
+      'logoUrl': _logoUrl,
+      'backgroundUrl': _backgroundUrl,
+      'doctorName': _doctorName,
+      'specialty': _specialty,
+      'clinicWord': _clinicWord,
+      'welcomeMessage': _welcomeMessage,
+      'experience': _experience,
+      'aboutText': _aboutText,
+      'phone': _phone,
+      'location': _location,
+      'facebookUrl': _facebookUrl,
+      'instagramUrl': _instagramUrl,
+      'tiktokUrl': _tiktokUrl,
+      'whatsappUrl': _whatsappUrl,
+      'weeklySchedule': _weeklySchedule,
+      'featuredServiceIds': _tempFeaturedServiceIds,
+      'featuredGalleryIds': _tempFeaturedGalleryIds,
+      'featuredReviewIds': _tempFeaturedReviewIds,
+      'featuredRatingIds': _tempFeaturedRatingIds,
+    }, SetOptions(merge: true));
+
+    _tempFeaturedServiceIds = [];
+    _tempFeaturedGalleryIds = [];
+    _tempFeaturedReviewIds = [];
+    _tempFeaturedRatingIds = [];
+
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('تم الحفظ بنجاح')));
+    }
   }
 }
