@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:websit/landing-page/landing_page.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:websit/landing-page/landing_page.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,14 +12,17 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _logoController;
+  late AnimationController _exitController;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
+  late Animation<double> _exitScaleAnimation;
+  late Animation<double> _exitFadeAnimation;
 
   bool _isLoadingComplete = false;
-  bool _hasError = false;
-  Map<String, dynamic> _settings = {};
+  final Completer<void> _resourcesLoaded = Completer<void>();
+  DocumentSnapshot? _preloadedSettings;
 
   @override
   void initState() {
@@ -28,6 +30,11 @@ class _SplashScreenState extends State<SplashScreen>
 
     _logoController = AnimationController(
       duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+
+    _exitController = AnimationController(
+      duration: const Duration(milliseconds: 1500), // Slower, smoother exit
       vsync: this,
     );
 
@@ -39,440 +46,365 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _logoController, curve: const Interval(0.2, 1.0)),
     );
 
+    // Zoom Through: Scale up significantly
+    _exitScaleAnimation = Tween<double>(begin: 1.0, end: 25.0).animate(
+      CurvedAnimation(parent: _exitController, curve: Curves.easeInOutCubic),
+    );
+
+    // Fade Out: Opacity goes from 1.0 to 0.0
+    _exitFadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _exitController, curve: Curves.easeInOut),
+    );
+
+    // Start loading resources immediately
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadAllResources();
+      _startLoadingProcess();
     });
   }
 
-  Future<void> _loadAllResources() async {
+  Future<void> _startLoadingProcess() async {
+    // Phase 1: Initial wait (Loading Screen)
+    // We wait for 5 seconds AND for the basic assets (bg, logo) to be precached.
+    // AND we fetch the settings for the Landing Page.
+
+    final minWait = Future.delayed(const Duration(seconds: 2));
+    final assetLoading = _precacheEssentialAssets();
+    final settingsLoading = _fetchAndCacheSettings();
+
+    await Future.wait([minWait, assetLoading, settingsLoading]);
+
+    if (!mounted) return;
+
+    // Transition to Phase 2 (Branded Splash)
+    setState(() {
+      _isLoadingComplete = true;
+    });
+
+    _startBrandedSplashPhase();
+  }
+
+  Future<void> _fetchAndCacheSettings() async {
     try {
-      debugPrint('🚀 بدء تهيئة Firebase...');
-
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-
-      debugPrint('✅ Firebase تم التهيئة بنجاح');
-
-      final settingsDoc = await FirebaseFirestore.instance
+      final doc = await FirebaseFirestore.instance
           .collection('site_data')
           .doc('settings')
-          .get()
-          .timeout(const Duration(seconds: 10));
-
-      debugPrint('📄 حالة الإعدادات: ${settingsDoc.exists}');
-
-      Map<String, dynamic> loadedSettings = {};
-      if (settingsDoc.exists && settingsDoc.data() != null) {
-        loadedSettings = settingsDoc.data()!;
-        debugPrint('✅ تم تحميل الإعدادات من Firebase');
-      }
-
-      // Precache background
-      final bgUrl = loadedSettings['backgroundUrl'];
-      if (bgUrl is String && bgUrl.startsWith('http')) {
-        try {
-          if (mounted) {
-            await precacheImage(NetworkImage(bgUrl), context);
-            debugPrint('✅ تم تحميل الخلفية');
-          }
-        } catch (e) {
-          debugPrint('❌ خطأ في تحميل الخلفية: $e');
-        }
-      }
-
-      // Precache logo
-      final logoUrl = loadedSettings['logoUrl'];
-      if (logoUrl is String && logoUrl.startsWith('http')) {
-        try {
-          if (mounted) {
-            await precacheImage(NetworkImage(logoUrl), context);
-            debugPrint('✅ تم تحميل اللوجو');
-          }
-        } catch (e) {
-          debugPrint('❌ خطأ في تحميل اللوجو: $e');
-        }
-      }
-
-      // Precache services — استخدام mainImage أو أول صورة من images
-      try {
-        final servicesSnap = await FirebaseFirestore.instance
-            .collection('services')
-            .get()
-            .timeout(const Duration(seconds: 10));
-
-        for (final doc in servicesSnap.docs) {
-          final data = doc.data();
-          String? url;
-
-          // استخدم mainImage إذا كان موجودًا، وإلا استخدم أول صورة من images
-          if (data['mainImage'] is String &&
-              (data['mainImage'] as String).isNotEmpty) {
-            url = data['mainImage'];
-          } else if (data['images'] is List &&
-              (data['images'] as List).isNotEmpty) {
-            url = (data['images'] as List<dynamic>).first as String?;
-          }
-
-          if (url != null && url.startsWith('http')) {
-            try {
-              if (mounted) {
-                await precacheImage(NetworkImage(url), context);
-              }
-            } catch (_) {}
-          }
-        }
-        debugPrint('✅ تم تحميل الخدمات');
-      } catch (e) {
-        debugPrint('❌ خطأ في تحميل الخدمات: $e');
-      }
-
-      // Precache gallery
-      try {
-        final gallerySnap = await FirebaseFirestore.instance
-            .collection('gallery')
-            .get()
-            .timeout(const Duration(seconds: 10));
-
-        for (final doc in gallerySnap.docs) {
-          final url = doc['url'] as String?;
-          if (url != null && url.startsWith('http')) {
-            try {
-              if (mounted) {
-                await precacheImage(NetworkImage(url), context);
-              }
-            } catch (_) {}
-          }
-        }
-        debugPrint('✅ تم تحميل المعرض');
-      } catch (e) {
-        debugPrint('❌ خطأ في تحميل المعرض: $e');
-      }
-
-      // Precache reviews
-      try {
-        await FirebaseFirestore.instance
-            .collection('reviews')
-            .orderBy('createdAt', descending: true)
-            .limit(5)
-            .get()
-            .timeout(const Duration(seconds: 10));
-        debugPrint('✅ تم تحميل التقييمات');
-      } catch (e) {
-        debugPrint('❌ خطأ في تحميل التقييمات: $e');
-      }
+          .get();
 
       if (!mounted) return;
 
-      setState(() {
-        _settings = loadedSettings;
-        _isLoadingComplete = true;
-        _hasError = false;
-      });
+      _preloadedSettings = doc;
 
-      _logoController.forward();
-      await Future.delayed(const Duration(seconds: 5));
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data() as Map<String, dynamic>;
 
-      if (!mounted) return;
+        // Precache network images from settings if available
+        final List<Future<void>> precacheFutures = [];
 
-      if (_logoController.isAnimating) {
-        _logoController.stop();
+        if (data['backgroundUrl'] is String &&
+            (data['backgroundUrl'] as String).startsWith('http')) {
+          precacheFutures.add(
+            precacheImage(
+              CachedNetworkImageProvider(data['backgroundUrl']),
+              context,
+            ),
+          );
+        }
+
+        if (data['logoUrl'] is String &&
+            (data['logoUrl'] as String).startsWith('http')) {
+          precacheFutures.add(
+            precacheImage(CachedNetworkImageProvider(data['logoUrl']), context),
+          );
+        }
+
+        if (precacheFutures.isNotEmpty) {
+          await Future.wait(precacheFutures);
+        }
       }
+    } catch (e) {
+      debugPrint('Error fetching settings: $e');
+    }
+  }
+
+  Future<void> _precacheEssentialAssets() async {
+    try {
+      await Future.wait([
+        precacheImage(const AssetImage('assets/images/splash_bg.jpg'), context),
+        precacheImage(const AssetImage('assets/images/logo.png'), context),
+      ]);
+      // Signal that resources are ready
+      if (!_resourcesLoaded.isCompleted) {
+        _resourcesLoaded.complete();
+      }
+    } catch (e) {
+      debugPrint('Error precaching assets: $e');
+      // Even if error, we complete to not block the app
+      if (!_resourcesLoaded.isCompleted) {
+        _resourcesLoaded.complete();
+      }
+    }
+  }
+
+  void _startBrandedSplashPhase() {
+    _logoController.forward();
+
+    // Phase 2: Branded Splash
+    // We wait for the animation/timer AND ensure resources are fully loaded.
+
+    Future.delayed(const Duration(seconds: 3), () async {
+      // Double check resources are loaded (should be true by now)
+      await _resourcesLoaded.future;
 
       if (mounted) {
+        // Start Exit Animation immediately
+        _exitController.forward();
+
+        // Navigate immediately so both animations play together
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-                const LandingPage(),
+                LandingPage(preloadedSettings: _preloadedSettings),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(opacity: animation, child: child);
+                  // Landing Page Fades In
+                  var fadeAnimation = Tween<double>(begin: 0.0, end: 1.0)
+                      .animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeInOut,
+                        ),
+                      );
+
+                  return FadeTransition(opacity: fadeAnimation, child: child);
                 },
-            transitionDuration: const Duration(milliseconds: 800),
+            transitionDuration: const Duration(milliseconds: 1500),
           ),
         );
       }
-    } catch (e) {
-      debugPrint('💥 خطأ عام في التحميل: $e');
-
-      if (!mounted) return;
-
-      setState(() {
-        _hasError = true;
-        // فقط في حالة الخطأ نستخدم قيمًا افتراضية للعرض
-        _settings = {
-          'welcomeMessage': 'مرحباً بكم في ',
-          'clinicWord': 'عيادة',
-          'doctorName': 'د/ سارة أحمد ',
-          'specialty': 'استشاري جلدية وتجميل وليزر',
-        };
-      });
-
-      _logoController.forward();
-      await Future.delayed(const Duration(seconds: 5));
-
-      if (!mounted) return;
-
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const LandingPage()),
-        );
-      }
-    }
+    });
   }
 
   @override
   void dispose() {
-    if (_logoController.isAnimating) {
-      _logoController.stop();
-    }
     _logoController.dispose();
+    _exitController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _isLoadingComplete
-          ? _buildBrandedSplash()
-          : _buildLoadingScreen(), // تعرض البيانات فور تحميلها، بدون قيم افتراضية
+      body: _isLoadingComplete ? _buildBrandedSplash() : _buildLoadingScreen(),
     );
   }
 
-  // لا تُستخدم إلا لاستخراج القيم — لا تُرجع قيمًا افتراضية أثناء التحميل
-  dynamic _getSetting(String key) {
-    return _settings[key];
-  }
-
   Widget _buildLoadingScreen() {
-    final bgUrl = _settings['backgroundUrl'];
-    final hasValidBg = bgUrl is String && bgUrl.startsWith('http');
-    final logoUrl = _settings['logoUrl'] as String?;
-
-    return Container(
-      decoration: hasValidBg
-          ? BoxDecoration(
-              image: DecorationImage(
-                image: CachedNetworkImageProvider(bgUrl),
-                fit: BoxFit.cover,
-              ),
-            )
-          : const BoxDecoration(color: Colors.white),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (_hasError) ...[
-              const Icon(Icons.error_outline, color: Colors.orange, size: 50),
-              const SizedBox(height: 15),
-              Text(
-                'جارٍ التحميل من البيانات المحلية',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.orange,
-                  fontFamily: 'NotoSansArabic',
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
-            // نعرض النصوص فقط إذا كانت متوفرة (بدون افتراضيات)
-            if (_getSetting('welcomeMessage') != null ||
-                _getSetting('clinicWord') != null)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (_getSetting('welcomeMessage') != null)
-                    Text(
-                      _getSetting('welcomeMessage') as String,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.pink,
-                        fontFamily: 'NotoSansArabic',
-                      ),
-                    ),
-                  const SizedBox(width: 10),
-                  if (_getSetting('clinicWord') != null)
-                    Text(
-                      _getSetting('clinicWord') as String,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.pink,
-                        fontFamily: 'NotoSansArabic',
-                      ),
-                    ),
-                ],
-              ),
-            if (_getSetting('doctorName') != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                _getSetting('doctorName') as String,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.pink[800],
-                  fontFamily: 'NotoSansArabic',
-                ),
-              ),
-            ],
-            if (_getSetting('specialty') != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                _getSetting('specialty') as String,
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.pink[700],
-                  fontFamily: 'NotoSansArabic',
-                ),
-              ),
-            ],
-            const SizedBox(height: 15),
-            // Logo
-            if (logoUrl != null && logoUrl.startsWith('http'))
-              CachedNetworkImage(
-                imageUrl: logoUrl,
-                width: MediaQuery.of(context).size.width * 0.3,
-                height: MediaQuery.of(context).size.width * 0.3,
-                fit: BoxFit.cover,
-              )
-            else if (_hasError)
-              Image.asset(
-                'assets/logo.png',
-                width: MediaQuery.of(context).size.width * 0.3,
-                height: MediaQuery.of(context).size.width * 0.3,
-              ),
-            const SizedBox(height: 15),
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.pink),
+    return Stack(
+      children: [
+        // Background
+        Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/images/splash_bg.jpg'),
+              fit: BoxFit.cover,
             ),
-            const SizedBox(height: 15),
-            Text(
-              'جاري التحميل...',
-              style: const TextStyle(
-                fontSize: 18,
-                color: Colors.pink,
-                fontFamily: 'NotoSansArabic',
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        // Black Overlay (Same as Branded Splash)
+        Container(
+          color: Colors.black.withValues(alpha: 0.45),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Welcome Text
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'مرحباً بكم في عيادة',
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        fontFamily: 'NotoSansArabic',
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  ' د/ سارة أحمد حامد ',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontFamily: 'NotoSansArabic',
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'استشاري الجلدية والتجميل والليزر',
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: Colors.white,
+                    fontFamily: 'NotoSansArabic',
+                  ),
+                ),
+                const SizedBox(height: 15),
+
+                // Logo
+                Container(
+                  width: 130,
+                  height: 130,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.4),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(
+                          Icons.medical_services,
+                          size: 60,
+                          color: Colors.pink,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 15),
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+                const SizedBox(height: 15),
+                const Text(
+                  'جاري التحميل...',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.white,
+                    fontFamily: 'NotoSansArabic',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildBrandedSplash() {
-    final bgUrl = _settings['backgroundUrl'];
-    final hasValidBg = bgUrl is String && bgUrl.startsWith('http');
-    final logoUrl = _settings['logoUrl'] as String?;
-
     return Stack(
       children: [
-        if (hasValidBg)
-          Container(
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: CachedNetworkImageProvider(bgUrl),
-                fit: BoxFit.cover,
-              ),
-            ),
-          )
-        else
-          Container(color: Colors.pink[50]),
-
+        // Background
         Container(
-          color: Colors.black.withValues(alpha: 0.45),
-          child: Center(
-            child: FadeTransition(
-              opacity: _fadeAnimation,
-              child: ScaleTransition(
-                scale: _scaleAnimation,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Logo
-                    Container(
-                      width: 130,
-                      height: 130,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.4),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/images/splash_bg.jpg'),
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+
+        // Overlay and Content
+        // Apply Exit Fade Animation to the whole container
+        FadeTransition(
+          opacity: _exitFadeAnimation,
+          child: Container(
+            color: Colors.black.withValues(alpha: 0.45),
+            child: Center(
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Logo with Exit Zoom Animation
+                      ScaleTransition(
+                        scale: _exitScaleAnimation,
+                        child: Container(
+                          width: 130,
+                          height: 130,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.4),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: ClipOval(
-                        child: logoUrl != null && logoUrl.startsWith('http')
-                            ? CachedNetworkImage(
-                                imageUrl: logoUrl,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => const Icon(
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
                                   Icons.medical_services,
                                   size: 60,
                                   color: Colors.pink,
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 30),
+                      // Text (will fade out with the container)
+                      Column(
+                        children: [
+                          const Text(
+                            'عيادة د/ سارة أحمد حامد',
+                            style: TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              fontFamily: 'NotoSansArabic',
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black,
+                                  blurRadius: 3,
+                                  offset: Offset(1, 1),
                                 ),
-                              )
-                            : const Icon(
-                                Icons.medical_services,
-                                size: 60,
-                                color: Colors.pink,
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    if (_getSetting('clinicWord') != null &&
-                        _getSetting('doctorName') != null)
-                      Text(
-                        '${_getSetting('clinicWord')} ${_getSetting('doctorName')}',
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          fontFamily: 'NotoSansArabic',
-                          shadows: [
-                            Shadow(
-                              color: Colors.black,
-                              blurRadius: 3,
-                              offset: Offset(1, 1),
+                              ],
                             ),
-                          ],
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    const SizedBox(height: 10),
-                    if (_getSetting('specialty') != null)
-                      Text(
-                        _getSetting('specialty') as String, // ✅ تحويل آمن
-                        style: const TextStyle(
-                          fontSize: 18,
-                          color: Colors.white,
-                          fontFamily: 'NotoSansArabic',
-                          shadows: [
-                            Shadow(
-                              color: Colors.black,
-                              blurRadius: 2,
-                              offset: Offset(1, 1),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            'استشاري الجلدية والتجميل والليزر',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Colors.white,
+                              fontFamily: 'NotoSansArabic',
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black,
+                                  blurRadius: 2,
+                                  offset: Offset(1, 1),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    if (_hasError) ...[
-                      const SizedBox(height: 20),
-                      Text(
-                        '⚠️ استخدام البيانات المحلية',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.orange[200],
-                          fontFamily: 'NotoSansArabic',
-                        ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),

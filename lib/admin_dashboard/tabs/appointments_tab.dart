@@ -94,6 +94,35 @@ class _AppointmentsTabState extends State<AppointmentsTab> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(data['phone'] ?? ''),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: Icon(
+                              Icons.message_rounded,
+                              color: Colors.green[700],
+                            ),
+                            onPressed: () {
+                              final status = data['status'] ?? 'pending';
+                              if (status == 'accepted' ||
+                                  status == 'rejected') {
+                                widget.notificationsManager
+                                    .openWhatsAppWithMessage(
+                                      context,
+                                      data,
+                                      status,
+                                    );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'يجب قبول أو رفض الموعد أولاً',
+                                    ),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+                              }
+                            },
+                            tooltip: "إرسال عبر واتساب",
+                          ),
                           IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
                             onPressed: () => _deleteAppointment(doc.id),

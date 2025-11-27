@@ -16,7 +16,8 @@ import 'package:websit/landing-page/widgets/auto_play_carousel.dart';
 import 'package:websit/auth/auth_gate.dart';
 
 class LandingPage extends StatefulWidget {
-  const LandingPage({super.key});
+  final DocumentSnapshot? preloadedSettings;
+  const LandingPage({super.key, this.preloadedSettings});
 
   @override
   State<LandingPage> createState() => _LandingPageState();
@@ -28,6 +29,16 @@ class _LandingPageState extends State<LandingPage> {
 
   // أضف متغير للتحكم في تأثير Hover في حالة الشاشات الكبيرة
   final Map<int, bool> _isHovered = {};
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
 
   void _startHoverAnimation(int index) {
     setState(() {
@@ -44,6 +55,7 @@ class _LandingPageState extends State<LandingPage> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<DocumentSnapshot>(
+      initialData: widget.preloadedSettings,
       stream: _firestore.collection('site_data').doc('settings').snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
@@ -102,7 +114,7 @@ class _LandingPageState extends State<LandingPage> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Text(
-                        '${settings['clinicWord'] ?? 'عيادة'} ${settings['doctorName'] ?? 'د/ سارة أحمد'}',
+                        '${settings['clinicWord'] ?? 'عيادة'} ${settings['doctorName'] ?? ' د/ سارة أحمد حامد'}',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onPrimary,
                           fontWeight: FontWeight.bold,
@@ -110,7 +122,8 @@ class _LandingPageState extends State<LandingPage> {
                         ),
                       ),
                       Text(
-                        settings['specialty'] ?? 'استشاري جلدية وتجميل وليزر',
+                        settings['specialty'] ??
+                            'استشاري الجلدية والتجميل والليزر',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onPrimary,
                           fontSize: 12,
@@ -138,7 +151,6 @@ class _LandingPageState extends State<LandingPage> {
           ),
           body: Stack(
             children: [
-              // خلفية الصورة
               // خلفية الصورة
               if (hasValidBg)
                 Positioned.fill(

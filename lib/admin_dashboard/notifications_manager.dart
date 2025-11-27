@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class NotificationsManager {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -257,13 +260,29 @@ class NotificationsManager {
                     onPressed: () async {
                       await _updateStatus(appointmentId!, 'accepted');
                       await _markAsRead(notification['id'], true);
-                      if (ctx.mounted) Navigator.pop(ctx, true); // Continue
+                      if (ctx.mounted) {
+                        await openWhatsAppWithMessage(
+                          ctx,
+                          appointmentData!,
+                          'accepted',
+                        );
+                        Navigator.pop(ctx, true); // Continue
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
                       foregroundColor: Colors.white,
                     ),
-                    child: const Text('قبول'),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.check, size: 18),
+                        const SizedBox(width: 4),
+                        const Text('قبول'),
+                        const SizedBox(width: 4),
+                        Icon(Icons.send_to_mobile_rounded, size: 16),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -272,13 +291,29 @@ class NotificationsManager {
                     onPressed: () async {
                       await _updateStatus(appointmentId!, 'rejected');
                       await _markAsRead(notification['id'], true);
-                      if (ctx.mounted) Navigator.pop(ctx, true); // Continue
+                      if (ctx.mounted) {
+                        await openWhatsAppWithMessage(
+                          ctx,
+                          appointmentData!,
+                          'rejected',
+                        );
+                        Navigator.pop(ctx, true); // Continue
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red,
                       foregroundColor: Colors.white,
                     ),
-                    child: const Text('رفض'),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.close, size: 18),
+                        const SizedBox(width: 4),
+                        const Text('رفض'),
+                        const SizedBox(width: 4),
+                        Icon(Icons.send_to_mobile_rounded, size: 16),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -572,20 +607,45 @@ class NotificationsManager {
             onPressed: () async {
               await _updateStatus(docId, 'accepted');
               if (!context.mounted) return;
-              Navigator.pop(context);
+              await openWhatsAppWithMessage(context, data, 'accepted');
+              if (!context.mounted) return;
               _showStatusSnackbar(context, 'تم قبول الموعد', Colors.green);
+              if (!context.mounted) return;
+              Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('قبول'),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.check, size: 18),
+                const SizedBox(width: 4),
+                const Text('قبول'),
+                const SizedBox(width: 4),
+                Icon(Icons.send_to_mobile_rounded, size: 16),
+              ],
+            ),
           ),
           ElevatedButton(
-            onPressed: () {
-              _updateStatus(docId, 'rejected');
-              Navigator.pop(context);
+            onPressed: () async {
+              await _updateStatus(docId, 'rejected');
+              if (!context.mounted) return;
+              await openWhatsAppWithMessage(context, data, 'rejected');
+              if (!context.mounted) return;
               _showStatusSnackbar(context, 'تم رفض الموعد', Colors.red);
+              if (!context.mounted) return;
+              Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('رفض'),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.close, size: 18),
+                const SizedBox(width: 4),
+                const Text('رفض'),
+                const SizedBox(width: 4),
+                Icon(Icons.send_to_mobile_rounded, size: 16),
+              ],
+            ),
           ),
         ],
       ),
@@ -754,6 +814,98 @@ class NotificationsManager {
     } catch (e) {
       debugPrint('❌ فشل إنشاء تنبيه: $e');
       rethrow;
+    }
+  }
+
+  // ✅ WhatsApp Integration Function
+  Future<void> openWhatsAppWithMessage(
+    BuildContext context,
+    Map<String, dynamic> appointmentData,
+    String status,
+  ) async {
+    final name = appointmentData['name'] ?? 'العميل';
+    final service = appointmentData['service'] ?? 'الخدمة';
+    final date = appointmentData['date'] ?? '';
+    final time = appointmentData['time'] ?? '';
+    final phone = appointmentData['phone']?.toString().trim() ?? '';
+
+    // تنظيف رقم الهاتف (إزالة المسافات و + و 002 أو 0 في البداية إذا لزم)
+    String cleanPhone = phone.replaceAll(RegExp(r'[^\d]'), '');
+    if (cleanPhone.startsWith('00')) {
+      cleanPhone = cleanPhone.substring(2);
+    } else if (cleanPhone.startsWith('0')) {
+      cleanPhone = '2$cleanPhone'; // مصر
+    } else if (!cleanPhone.startsWith('2')) {
+      cleanPhone = '2$cleanPhone'; // افتراضي مصر
+    }
+
+    String message = '';
+    if (status == 'accepted') {
+      message =
+          "مرحباً يا $name،\n\n"
+          "تم قبول حجزك بنجاح ✅\n"
+          "الخدمة: $service\n"
+          "التاريخ: $date\n"
+          "الوقت: $time\n\n"
+          "نتطلع لرؤيتك قريباً 🌸\n"
+          "شكراً لثقتك بنا 💕\n"
+          "عيادة د/ سارة أحمد";
+    } else if (status == 'rejected') {
+      message =
+          "مرحباً يا $name،\n\n"
+          "نأسف لإعلامك بأن الموعد المطلوب غير متاح حالياً ❌\n"
+          "الخدمة: $service\n"
+          "التاريخ: $date\n"
+          "الوقت: $time\n\n"
+          "يمكنك حجز موعد آخر في أي وقت من الموقع 📅\n"
+          "شكراً لتفهمك 🙏\n"
+          "عيادة د/ سارة أحمد";
+    }
+
+    final encodedMessage = Uri.encodeComponent(message);
+    final whatsappUrl =
+        "https://api.whatsapp.com/send?phone=$cleanPhone&text=$encodedMessage";
+
+    try {
+      if (await canLaunchUrl(Uri.parse(whatsappUrl))) {
+        await launchUrl(
+          Uri.parse(whatsappUrl),
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        throw "لا يمكن فتح واتساب";
+      }
+    } catch (e) {
+      // fallback للويب
+      try {
+        if (await canLaunchUrl(Uri.parse(whatsappUrl))) {
+          await launchUrl(
+            Uri.parse(whatsappUrl),
+            mode: LaunchMode.platformDefault,
+          );
+        }
+      } catch (e2) {
+        debugPrint('❌ فشل فتح واتساب: $e2');
+      }
+    }
+
+    // إظهار رسالة للإدارة
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text("جاري فتح واتساب... اضغطي 'إرسال' لإتمام الرسالة"),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.green[700],
+          duration: const Duration(seconds: 4),
+        ),
+      );
     }
   }
 
