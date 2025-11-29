@@ -254,6 +254,9 @@ class _BookingFormState extends State<BookingForm> {
               .toList() ??
           [];
 
+      // إضافة هذا السطر لفحص البيانات
+      _debugScheduleData();
+
       _locations = _weeklySchedule
           .where(
             (day) =>
@@ -506,26 +509,68 @@ class _BookingFormState extends State<BookingForm> {
     return arabicDays[normalizedDay] ?? normalizedDay;
   }
 
+  void _debugScheduleData() {
+    debugPrint('=== بيانات الجدول الأسبوعي ===');
+    for (var day in _weeklySchedule) {
+      debugPrint(
+        'اليوم: ${day['day']}, '
+        'مفعل: ${day['enabled']}, '
+        'من: ${day['startTime']}, '
+        'إلى: ${day['endTime']}, '
+        'المكان: ${day['location']}',
+      );
+    }
+    debugPrint('=============================');
+  }
+
   TimeOfDay _parseTime(String timeStr) {
     try {
-      String normalizedTime = _normalizeNumbers(timeStr);
+      if (timeStr.isEmpty) {
+        return const TimeOfDay(hour: 9, minute: 0);
+      }
 
-      final parts = normalizedTime.split(' ');
-      final timePart = parts[0];
-      final period = parts.length > 1 ? parts[1] : '';
+      String normalizedTime = _normalizeNumbers(timeStr.trim());
 
+      // التعامل مع التنسيقات المختلفة
+      final hasEnglishPeriod =
+          normalizedTime.contains('AM') || normalizedTime.contains('PM');
+      final hasArabicPeriod =
+          normalizedTime.contains('ص') || normalizedTime.contains('م');
+
+      String period = '';
+      String timePart = normalizedTime;
+
+      if (hasEnglishPeriod) {
+        // التنسيق الإنجليزي: "9:00 AM" أو "5:00 PM"
+        final parts = normalizedTime.split(' ');
+        timePart = parts[0];
+        period = parts[1].toUpperCase(); // AM أو PM
+      } else if (hasArabicPeriod) {
+        // التنسيق العربي: "9:00 ص" أو "5:00 م"
+        final parts = normalizedTime.split(' ');
+        timePart = parts[0];
+        period = parts[1] == 'ص' ? 'AM' : 'PM';
+      } else {
+        // إذا لم يكن هناك مؤشر ص/م/AM/PM، نفرض أنه صباحي
+        period = 'AM';
+      }
+
+      // فصل الساعات والدقائق
       final timeComponents = timePart.split(RegExp(r'[:\.]'));
       int hour = int.parse(timeComponents[0]);
       int minute = timeComponents.length > 1 ? int.parse(timeComponents[1]) : 0;
 
-      if (period == 'م' && hour != 12) {
+      // التحويل إلى نظام 24 ساعة
+      if (period == 'PM' && hour != 12) {
         hour += 12;
-      } else if (period == 'ص' && hour == 12) {
+      } else if (period == 'AM' && hour == 12) {
         hour = 0;
       }
 
       hour = hour.clamp(0, 23);
       minute = minute.clamp(0, 59);
+
+      debugPrint('تحويل الوقت: "$timeStr" -> $hour:$minute');
 
       return TimeOfDay(hour: hour, minute: minute);
     } catch (e) {
@@ -537,7 +582,7 @@ class _BookingFormState extends State<BookingForm> {
   String _formatTime(TimeOfDay time) {
     final hour = time.hourOfPeriod;
     final minute = time.minute.toString().padLeft(2, '0');
-    final period = time.period == DayPeriod.am ? 'ص' : 'م';
+    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
     return '$hour:$minute $period';
   }
 

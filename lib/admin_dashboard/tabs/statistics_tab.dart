@@ -518,7 +518,281 @@ class _StatisticsTabState extends State<StatisticsTab> {
           ],
         ),
       ),
+
+      // كونتينر التقييمات المفصل
+      const SliverToBoxAdapter(child: SizedBox(height: 30)),
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: _buildRatingsStatisticsCard(),
+        ),
+      ),
     ];
+  }
+
+  Widget _buildRatingsStatisticsCard() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firestore.collection('ratings').snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        }
+
+        final ratings = snapshot.data!.docs;
+        final totalRatings = ratings.length;
+
+        if (totalRatings == 0) {
+          return Card(
+            elevation: 8,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: LinearGradient(
+                  colors: [Colors.purple.withValues(alpha: 0.1), Colors.white],
+                ),
+              ),
+              child: const Column(
+                children: [
+                  Icon(Icons.star_border, size: 60, color: Colors.amber),
+                  SizedBox(height: 16),
+                  Text(
+                    'لا توجد تقييمات بعد',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        // حساب الإحصائيات
+        double totalStars = 0;
+        Map<int, int> starDistribution = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
+
+        for (var doc in ratings) {
+          final data = doc.data() as Map<String, dynamic>;
+          final stars = (data['stars'] ?? 0) as num;
+          final starsValue = stars.toDouble();
+
+          totalStars += starsValue;
+
+          final starLevel = starsValue.round();
+          if (starLevel >= 1 && starLevel <= 5) {
+            starDistribution[starLevel] =
+                (starDistribution[starLevel] ?? 0) + 1;
+          }
+        }
+
+        final averageRating = totalRatings > 0
+            ? totalStars / totalRatings
+            : 0.0;
+
+        return Card(
+          elevation: 8,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                colors: [Colors.purple.withValues(alpha: 0.1), Colors.white],
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // العنوان
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.purple.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.star_rounded,
+                        color: Colors.amber,
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Text(
+                      'إحصائيات التقييمات',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.purple,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // متوسط التقييم
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.purple.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.purple.withValues(alpha: 0.3),
+                      width: 2,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Column(
+                        children: [
+                          Text(
+                            averageRating.toStringAsFixed(1),
+                            style: const TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.purple,
+                            ),
+                          ),
+                          Row(
+                            children: List.generate(
+                              5,
+                              (index) => Icon(
+                                index < averageRating.round()
+                                    ? Icons.star
+                                    : Icons.star_border,
+                                color: Colors.amber,
+                                size: 24,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'متوسط التقييم',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        width: 2,
+                        height: 80,
+                        color: Colors.purple.withValues(alpha: 0.3),
+                      ),
+                      Column(
+                        children: [
+                          Text(
+                            '$totalRatings',
+                            style: const TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.purple,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'إجمالي التقييمات',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // توزيع النجوم
+                const Text(
+                  'توزيع التقييمات',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                ...List.generate(5, (index) {
+                  final stars = 5 - index;
+                  final count = starDistribution[stars] ?? 0;
+                  final percentage = totalRatings > 0
+                      ? (count / totalRatings)
+                      : 0.0;
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 30,
+                          child: Text(
+                            '$stars',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        const Icon(Icons.star, color: Colors.amber, size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: LinearProgressIndicator(
+                              value: percentage,
+                              minHeight: 12,
+                              backgroundColor: Colors.grey[200],
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.purple.shade400,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 50,
+                          child: Text(
+                            '$count',
+                            textAlign: TextAlign.end,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildCollectionCard(
