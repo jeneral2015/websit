@@ -1104,14 +1104,21 @@ class _BookingFormState extends State<BookingForm> {
               ),
             ),
             actions: [
-              TextButton(
+              ElevatedButton(
                 onPressed: () => Navigator.pop(context, false),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(140, 40),
+                ),
                 child: const Text('تعديل'),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.pink[800],
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size(140, 40),
                 ),
                 child: const Text('تأكيد الحجز'),
               ),
@@ -1236,92 +1243,95 @@ class _BookingFormState extends State<BookingForm> {
       barrierDismissible: false,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.pink[50]!, Colors.white, Colors.pink[50]!],
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 500),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.pink[50]!, Colors.white, Colors.pink[50]!],
+              ),
             ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.green,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.green.shade300, width: 3),
-                ),
-                child: const Icon(Icons.check, color: Colors.white, size: 40),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'تم الحجز بنجاح!',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.pink[800],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'شكراً لك $_name على حجزك',
-                style: const TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.pink[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.pink.shade100),
-                ),
-                child: Column(
-                  children: [
-                    _buildSuccessItem('الخدمة:', _service),
-                    _buildSuccessItem('المكان:', _selectedLocation ?? ''),
-                    if (_selectedDate != null && _selectedTime != null)
-                      _buildSuccessItem(
-                        'الموعد:',
-                        '${DateFormat('EEEE d MMM', 'ar').format(_selectedDate!)} - ${_formatTime(_selectedTime!)}',
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'سيتم التواصل معك لتأكيد الحجز',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.green,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.pink[800],
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 12,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.green.shade300, width: 3),
                   ),
-                  shape: RoundedRectangleBorder(
+                  child: const Icon(Icons.check, color: Colors.white, size: 40),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'تم الحجز بنجاح!',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.pink[800],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'شكراً لك $_name على حجزك',
+                  style: const TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.pink[50],
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.pink.shade100),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildSuccessItem('الخدمة:', _service),
+                      _buildSuccessItem('المكان:', _selectedLocation ?? ''),
+                      if (_selectedDate != null && _selectedTime != null)
+                        _buildSuccessItem(
+                          'الموعد:',
+                          '${DateFormat('EEEE d MMM', 'ar').format(_selectedDate!)} - ${_formatTime(_selectedTime!)}',
+                        ),
+                    ],
                   ),
                 ),
-                child: const Text('تم', style: TextStyle(fontSize: 16)),
-              ),
-            ],
+                const SizedBox(height: 8),
+                const Text(
+                  'سيتم التواصل معك لتأكيد الحجز',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.pink[800],
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('تم', style: TextStyle(fontSize: 16)),
+                ),
+              ],
+            ),
           ),
         ),
       ),
