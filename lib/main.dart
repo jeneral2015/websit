@@ -4,19 +4,23 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:websit/firebase_options.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'splash_screen.dart';
 import 'package:websit/landing-page/landing_page.dart';
-import 'package:websit/admin_dashboard/admin_dashboard.dart';
 import 'package:websit/landing-page/booking_form.dart';
 import 'package:websit/landing-page/services_page.dart';
 import 'package:websit/landing-page/gallery_page.dart';
 import 'package:websit/landing-page/reviews_page.dart';
 import 'package:websit/landing-page/service_details_page.dart';
 import 'package:websit/landing-page/image_viewer_page.dart';
-import 'package:websit/admin_dashboard/archive_page.dart';
 import 'package:websit/landing-page/ratings_page.dart';
 import 'package:websit/auth/auth_gate.dart';
 import 'package:websit/auth/login_page.dart';
+import 'package:websit/admin_dashboard/archive_page.dart';
+
+// Deferred imports for code splitting (Heavy pages only)
+import 'package:websit/admin_dashboard/admin_dashboard.dart'
+    deferred as admin_dashboard;
 
 // 🔑 Top-level handler for background messages (must be outside any class)
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -56,6 +60,8 @@ class BeautyClinicApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    FirebaseAnalytics analytics = FirebaseAnalytics.instance;
+
     return MaterialApp(
       title: 'دكتورة سارة أحمد - استشاري جلدية وتجميل',
       theme: ThemeData(
@@ -81,15 +87,18 @@ class BeautyClinicApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      navigatorObservers: [FirebaseAnalyticsObserver(analytics: analytics)],
       builder: (context, child) {
         return Directionality(textDirection: TextDirection.rtl, child: child!);
       },
-      home: const SplashScreen(), // � Start with Splash Screen
+      home: const SplashScreen(), //  Start with Splash Screen
       routes: {
-        '/auth_gate': (context) =>
-            const AuthGate(), // Add named route for AuthGate
+        '/auth_gate': (context) => const AuthGate(),
         '/login': (context) => const LoginPage(),
-        '/admin': (context) => const AdminDashboard(),
+        '/admin': (context) => DeferredLoader(
+          loadLibrary: admin_dashboard.loadLibrary,
+          builder: () => admin_dashboard.AdminDashboard(),
+        ),
         '/booking': (context) => const BookingForm(),
         '/services': (context) => const ServicesPage(),
         '/gallery': (context) => const GalleryPage(),
@@ -121,6 +130,37 @@ class BeautyClinicApp extends StatelessWidget {
         return null;
       },
       debugShowCheckedModeBanner: false,
+    );
+  }
+}
+
+/// A helper widget to handle deferred loading of libraries.
+class DeferredLoader extends StatelessWidget {
+  final Future<void> Function() loadLibrary;
+  final Widget Function() builder;
+
+  const DeferredLoader({
+    super.key,
+    required this.loadLibrary,
+    required this.builder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder(
+      future: loadLibrary(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          return builder();
+        }
+        return const Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(
+              color: Color.fromARGB(162, 233, 30, 98),
+            ),
+          ),
+        );
+      },
     );
   }
 }

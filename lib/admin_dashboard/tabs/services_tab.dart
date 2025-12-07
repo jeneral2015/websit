@@ -19,13 +19,24 @@ class _ServicesTabState extends State<ServicesTab> {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        const SizedBox(height: 16),
         Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: ElevatedButton(
-            onPressed: _addService,
-            child: const Text('إضافة خدمة جديدة'),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.add_a_photo),
+                label: const Text('إضافة خدمة جديدة'),
+                onPressed: _addService,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
+                ),
+              ),
+            ),
           ),
         ),
+        const SizedBox(height: 16),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: _firestore.collection('services').snapshots(),
@@ -124,6 +135,7 @@ class _ServicesTabState extends State<ServicesTab> {
                             file.bytes!,
                             file.name,
                             docId: 'services',
+                            useUniqueName: true,
                           );
                           if (url != null && context.mounted) {
                             setStateDialog(() => images.add(url));
@@ -178,14 +190,40 @@ class _ServicesTabState extends State<ServicesTab> {
                           secondary: IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
                             onPressed: () {
-                              setStateDialog(() {
-                                images.removeAt(i);
-                                if (mainImage == url) {
-                                  mainImage = images.isNotEmpty
-                                      ? images.first
-                                      : null;
-                                }
-                              });
+                              showDialog(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('تأكيد الحذف'),
+                                  content: const Text(
+                                    'هل أنت متأكد من حذف هذه الصورة؟',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(ctx),
+                                      child: const Text('إلغاء'),
+                                    ),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                      ),
+                                      onPressed: () async {
+                                        Navigator.pop(ctx);
+                                        // حذف الصورة الفردية فوراً
+                                        await _deleteSingleImage(url);
+                                        setStateDialog(() {
+                                          images.removeAt(i);
+                                          if (mainImage == url) {
+                                            mainImage = images.isNotEmpty
+                                                ? images.first
+                                                : null;
+                                          }
+                                        });
+                                      },
+                                      child: const Text('حذف'),
+                                    ),
+                                  ],
+                                ),
+                              );
                             },
                           ),
                         );
@@ -203,6 +241,7 @@ class _ServicesTabState extends State<ServicesTab> {
             ),
             ElevatedButton(
               onPressed: () async {
+                // 3. تحديث Firestore
                 await _firestore.collection('services').doc(serviceId).update({
                   'images': images,
                   'mainImage': mainImage,
@@ -215,6 +254,32 @@ class _ServicesTabState extends State<ServicesTab> {
         ),
       ),
     );
+  }
+
+  Future<void> _deleteSingleImage(String imageUrl) async {
+    try {
+      await _dropboxUploader.deleteFile(imageUrl);
+      debugPrint('DEBUG: Successfully deleted single image: $imageUrl');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم حذف الصورة من التخزين'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('ERROR: Failed to delete image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('فشل حذف الصورة: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   void _addService() => _showServiceDialog();
@@ -270,6 +335,7 @@ class _ServicesTabState extends State<ServicesTab> {
                             file.bytes!,
                             file.name,
                             docId: 'services',
+                            useUniqueName: true,
                           );
                           if (url != null && context.mounted) {
                             setStateDialog(() => images.add(url));
@@ -327,14 +393,39 @@ class _ServicesTabState extends State<ServicesTab> {
                             secondary: IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
                               onPressed: () {
-                                setStateDialog(() {
-                                  images.removeAt(i);
-                                  if (mainImage == url) {
-                                    mainImage = images.isNotEmpty
-                                        ? images.first
-                                        : null;
-                                  }
-                                });
+                                showDialog(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: const Text('تأكيد الحذف'),
+                                    content: const Text(
+                                      'هل أنت متأكد من حذف هذه الصورة؟',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(ctx),
+                                        child: const Text('إلغاء'),
+                                      ),
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                        ),
+                                        onPressed: () async {
+                                          Navigator.pop(ctx);
+                                          await _deleteSingleImage(url);
+                                          setStateDialog(() {
+                                            images.removeAt(i);
+                                            if (mainImage == url) {
+                                              mainImage = images.isNotEmpty
+                                                  ? images.first
+                                                  : null;
+                                            }
+                                          });
+                                        },
+                                        child: const Text('حذف'),
+                                      ),
+                                    ],
+                                  ),
+                                );
                               },
                             ),
                           );
@@ -374,21 +465,61 @@ class _ServicesTabState extends State<ServicesTab> {
     );
   }
 
-  void _deleteService(String id) {
+  void _deleteService(String id) async {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('تأكيد الحذف'),
-        content: const Text('هل تريد حذف الخدمة؟'),
+        content: const Text('هل تريد حذف الخدمة وجميع صورها؟'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text('إلغاء'),
           ),
           ElevatedButton(
-            onPressed: () {
-              _firestore.collection('services').doc(id).delete();
-              Navigator.pop(ctx);
+            onPressed: () async {
+              // 1. جلب بيانات الخدمة لحذف الصور
+              final doc = await _firestore.collection('services').doc(id).get();
+              if (doc.exists) {
+                final data = doc.data() as Map<String, dynamic>;
+                final images = (data['images'] is List)
+                    ? (data['images'] as List<dynamic>)
+                          .map((e) => e.toString())
+                          .toList()
+                    : <String>[];
+
+                // 2. حذف كل الصور من Dropbox
+                for (final url in images) {
+                  await _dropboxUploader.deleteFile(url);
+                  debugPrint('DEBUG: Deleted image from Dropbox: $url');
+                }
+
+                // 3. حذف الصورة الرئيسية إذا كانت مختلفة
+                final mainImage = data['mainImage']?.toString();
+                if (mainImage != null &&
+                    mainImage.isNotEmpty &&
+                    !images.contains(mainImage)) {
+                  await _dropboxUploader.deleteFile(mainImage);
+                  debugPrint(
+                    'DEBUG: Deleted main image from Dropbox: $mainImage',
+                  );
+                }
+              }
+
+              // 4. حذف المستند من Firestore
+              await _firestore.collection('services').doc(id).delete();
+
+              if (ctx.mounted) Navigator.pop(ctx);
+
+              // إشعار بنجاح العملية
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('تم حذف الخدمة وجميع صورها بنجاح'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('حذف'),

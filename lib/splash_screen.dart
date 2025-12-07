@@ -129,7 +129,10 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _precacheEssentialAssets() async {
     try {
       await Future.wait([
-        precacheImage(const AssetImage('assets/images/splash_bg.jpg'), context),
+        precacheImage(
+          const AssetImage('assets/images/splash_bg.webp'),
+          context,
+        ),
         precacheImage(const AssetImage('assets/images/logo.png'), context),
       ]);
       // Signal that resources are ready
@@ -205,7 +208,7 @@ class _SplashScreenState extends State<SplashScreen>
         Container(
           decoration: const BoxDecoration(
             image: DecorationImage(
-              image: AssetImage('assets/images/splash_bg.jpg'),
+              image: AssetImage('assets/images/splash_bg.webp'),
               fit: BoxFit.cover,
             ),
           ),
@@ -311,7 +314,7 @@ class _SplashScreenState extends State<SplashScreen>
         Container(
           decoration: const BoxDecoration(
             image: DecorationImage(
-              image: AssetImage('assets/images/splash_bg.jpg'),
+              image: AssetImage('assets/images/splash_bg.webp'),
               fit: BoxFit.cover,
             ),
           ),

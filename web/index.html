@@ -2,75 +2,495 @@
 <html>
 
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
-
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <!-- Open Graph Meta Tags -->
-  <meta property="og:title" content="عيادة د. سارة احمد حامد | جلدية و تجميل و ليزر" />
+  <meta name="description"
+    content="عيادة د. سارة احمد حامد - أفضل عيادة جلدية وليزر وتجميل. نقدم أحدث العلاجات للبشرة والشعر بأحدث الأجهزة الطبية.">
+  <meta name="keywords" content="جلدية, ليزر, تجميل, عيادة د. سارة, إزالة الشعر بالليزر, العناية بالبشرة">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="عيادة د. سارة أحمد حامد | جلدية و تجميل و ليزر" />
   <meta property="og:description"
     content="عيادة د. سارة - أحدث تقنيات الجلدية والليزر والتجميل. نتائج مضمونة وعناية طبية فائقة." />
   <meta property="og:image" content="https://dr-sara-clinic.firebaseapp.com/og-image.jpg" />
   <meta property="og:url" content="https://dr-sara-clinic.firebaseapp.com" />
   <meta property="og:type" content="website" />
-  <!-- SEO Meta Tags -->
-  <meta name="description"
-    content="عيادة د. سارة - أفضل عيادة جلدية وليزر وتجميل. نقدم أحدث العلاجات للبشرة والشعر بأحدث الأجهزة الطبية." />
-  <meta name="keywords" content="جلدية, ليزر, تجميل, عيادة د. سارة, إزالة الشعر بالليزر, العناية بالبشرة" />
 
-  <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
+  <!-- iOS & Favicon -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="websit">
+  <meta name="apple-mobile-web-app-title" content="د. سارة">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png" />
-
-  <title>عيادة د. سارة</title>
+  <link rel="icon" type="image/png" href="favicon.png">
   <link rel="manifest" href="manifest.json">
-  <!-- The core Firebase JS SDK is always required and must be listed first -->
-  <script type="module">
-    // Import the functions you need from the SDKs you need
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    // TODO: Add SDKs for Firebase products that you want to use
-    // https://firebase.google.com/docs/web/setup#available-libraries
+  <title>عيادة د. سارة احمد حامد</title>
 
-    // Your web app's Firebase configuration
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-    const firebaseConfig = {
-      apiKey: "AIzaSyAqWBz3Wocajqmjy-gpqbpsL4w-JrwZN9U",
-      authDomain: "dr-sara-clinic.firebaseapp.com",
-      projectId: "dr-sara-clinic",
-      storageBucket: "dr-sara-clinic.firebasestorage.app",
-      messagingSenderId: "55082936997",
-      appId: "1:55082936997:web:2630ae4bdb744a045fbb4c",
-      measurementId: "G-CC9C0GJBXD"
-    };
+  <!-- Preconnect -->
 
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const analytics = getAnalytics(app);
-  </script>
+
+  <style>
+    :root {
+      --primary-pink: #d81b60;
+      --light-pink: #f8bbd9;
+      --medium-pink: #f48fb1;
+      --dark-pink: #c2185b;
+      --white: #ffffff;
+      --shadow: rgba(0, 0, 0, 0.1);
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Noto Sans Arabic', sans-serif;
+    }
+
+    @font-face {
+      font-family: 'Noto Sans Arabic';
+      src: url('fonts/noto-sans-arabic-400.woff2') format('woff2');
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Noto Sans Arabic';
+      src: url('fonts/noto-sans-arabic-700.woff2') format('woff2');
+      font-weight: 700;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    /* خلفية من الكود الأول (بدون ::after) */
+    #splash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg,
+          #fce4ec 0%,
+          #f8bbd9 25%,
+          #f48fb1 50%,
+          #ec407a 75%,
+          #d81b60 100%);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.9s ease-out;
+    }
+
+    @keyframes gradientBG {
+      0% {
+        background-position: 0% 50%;
+      }
+
+      50% {
+        background-position: 100% 50%;
+      }
+
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+
+    /* دوائر متحركة في الخلفية (من الكود الأول) */
+    .bg-circle {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      animation: float 20s infinite linear;
+    }
+
+    .circle-1 {
+      width: 300px;
+      height: 300px;
+      top: -150px;
+      right: -150px;
+      animation-delay: 0s;
+    }
+
+    .circle-2 {
+      width: 200px;
+      height: 200px;
+      bottom: -100px;
+      left: -100px;
+      animation-delay: -5s;
+      animation-duration: 25s;
+    }
+
+    .circle-3 {
+      width: 150px;
+      height: 150px;
+      top: 50%;
+      left: 10%;
+      animation-delay: -10s;
+      animation-duration: 30s;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+
+      100% {
+        transform: translate(100px, 100px) rotate(360deg);
+      }
+    }
+
+    /* محتوى الـ splash (بدون كونتينر الخلفية) */
+    .splash-content {
+      position: relative;
+      text-align: center;
+      color: white;
+      padding: 40px;
+      z-index: 2;
+      max-width: 800px;
+    }
+
+    /* العنوان الرئيسي (من الكود الثاني مع تعديلات) */
+    .title {
+      font-size: 42px;
+      font-weight: 900;
+      margin: 0 0 20px;
+      line-height: 1.2;
+      text-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.25),
+        0 1px 0 rgba(255, 255, 255, 0.3);
+      position: relative;
+      padding-bottom: 25px;
+    }
+
+    /* الخط تحت العنوان (من الكود الثاني) */
+    .title::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 30%;
+      right: 30%;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, white, transparent);
+      border-radius: 3px;
+    }
+
+    /* التأكيد على الاسم باللون الأبيض */
+    .doctor-name {
+      color: white;
+      position: relative;
+      display: inline-block;
+    }
+
+
+    /* العنوان الفرعي */
+    .subtitle {
+      font-size: 24px;
+      margin: 0 0 50px;
+      font-weight: 600;
+      opacity: 0.95;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      letter-spacing: 1px;
+    }
+
+    /* منطقة التحميل (من الكود الثاني) */
+    .loading {
+      margin-top: 40px;
+    }
+
+    /* سبينر حديث (من الكود الثاني) */
+    .modern-spinner {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 20px;
+      position: relative;
+    }
+
+    .spinner-circle {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      border-top-color: white;
+      animation: spin 1.5s linear infinite;
+    }
+
+    .spinner-circle:nth-child(2) {
+      width: 80%;
+      height: 80%;
+      top: 10%;
+      left: 10%;
+      border-top-color: rgba(255, 255, 255, 0.7);
+      animation: spin 1.2s linear infinite reverse;
+    }
+
+    .spinner-circle:nth-child(3) {
+      width: 60%;
+      height: 60%;
+      top: 20%;
+      left: 20%;
+      border-top-color: rgba(255, 255, 255, 0.5);
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* نص التحميل */
+    .loading-text {
+      font-size: 18px;
+      color: white;
+      font-weight: 500;
+      letter-spacing: 1px;
+      margin-bottom: 15px;
+    }
+
+    /* نقاط التحميل المتحركة */
+    .loading-dots {
+      display: inline-block;
+      margin-right: 5px;
+    }
+
+    .loading-dots span {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: white;
+      margin: 0 3px;
+      opacity: 0.3;
+      animation: pulseDots 1.4s infinite;
+    }
+
+    .loading-dots span:nth-child(1) {
+      animation-delay: 0s;
+    }
+
+    .loading-dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .loading-dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes pulseDots {
+
+      0%,
+      100% {
+        opacity: 0.3;
+        transform: scale(0.8);
+      }
+
+      50% {
+        opacity: 1;
+        transform: scale(1.2);
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+      }
+    }
+
+    /* شريط تقدم (من الكود الثاني) */
+    .progress-container {
+      width: 250px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      margin: 15px auto 0;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ff4081, #f50057);
+      border-radius: 2px;
+      animation: progressLoad 2s ease-in-out infinite;
+    }
+
+    @keyframes progressLoad {
+      0% {
+        width: 0%;
+      }
+
+      50% {
+        width: 70%;
+      }
+
+      100% {
+        width: 100%;
+      }
+    }
+
+    /* تأثير الفيد أوت */
+    .fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* تصميم متجاوب */
+    @media (max-width: 768px) {
+      .splash-content {
+        padding: 30px 20px;
+        margin: 20px;
+      }
+
+      .title {
+        font-size: 32px;
+        padding-bottom: 20px;
+      }
+
+      .title::after {
+        left: 25%;
+        right: 25%;
+      }
+
+      .subtitle {
+        font-size: 20px;
+        margin-bottom: 40px;
+      }
+
+      .loading-text {
+        font-size: 16px;
+      }
+
+      .modern-spinner {
+        width: 50px;
+        height: 50px;
+      }
+
+      .progress-container {
+        width: 200px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .title {
+        font-size: 28px;
+      }
+
+      .subtitle {
+        font-size: 18px;
+        margin-bottom: 35px;
+      }
+
+      .splash-content {
+        padding: 25px 15px;
+      }
+
+      .title::after {
+        left: 20%;
+        right: 20%;
+      }
+
+      .progress-container {
+        width: 180px;
+      }
+    }
+  </style>
+
+
 </head>
 
 <body>
+
+  <div id="splash">
+    <!-- دوائر متحركة في الخلفية (من الكود الأول) -->
+    <div class="bg-circle circle-1"></div>
+    <div class="bg-circle circle-2"></div>
+    <div class="bg-circle circle-3"></div>
+
+    <!-- المحتوى بدون أي كونتينرات إضافية -->
+    <div class="splash-content">
+      <!-- تم حذف: .text-logo و .text-logo-main و .doctor-name-container -->
+
+      <h1 class="title">
+        <span class="doctor-name">د. سارة أحمد حامد</span>
+      </h1>
+      <p class="subtitle">استشاري الجلدية - التجميل - الليزر</p>
+
+      <div class="loading">
+        <div class="modern-spinner">
+          <div class="spinner-circle"></div>
+          <div class="spinner-circle"></div>
+          <div class="spinner-circle"></div>
+        </div>
+
+        <div class="loading-text">
+          جاري تحميل العيادة
+          <span class="loading-dots">
+            <span></span><span></span><span></span>
+          </span>
+        </div>
+
+        <div class="progress-container">
+          <div class="progress-bar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase -->
+
+
   <script src="flutter_bootstrap.js" async></script>
+
+  <script>
+    const splash = document.getElementById('splash');
+
+    // محاكاة تقدم التحميل
+    let progress = 0;
+    const progressBar = document.querySelector('.progress-bar');
+    const progressInterval = setInterval(() => {
+      if (progress < 95) {
+        progress += Math.random() * 10;
+        if (progressBar) {
+          progressBar.style.width = Math.min(progress, 95) + '%';
+        }
+      }
+    }, 300);
+
+    const observer = new MutationObserver(() => {
+      if (document.querySelector('flt-glass-pane') || document.querySelector('flutter-view')) {
+        if (progressBar) {
+          progressBar.style.width = '100%';
+        }
+        clearInterval(progressInterval);
+
+        setTimeout(() => {
+          splash.classList.add('fade-out');
+          setTimeout(() => splash.remove(), 800);
+        }, 500);
+
+        observer.disconnect();
+      }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    // وقت احتياطي
+    setTimeout(() => {
+      if (splash) {
+        if (progressBar) {
+          progressBar.style.width = '100%';
+        }
+        clearInterval(progressInterval);
+
+        splash.classList.add('fade-out');
+        setTimeout(() => splash.remove(), 800);
+      }
+    }, 12000);
+  </script>
+
 </body>
 
 </html>

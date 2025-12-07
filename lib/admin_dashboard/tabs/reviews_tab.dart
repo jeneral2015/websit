@@ -19,11 +19,24 @@ class _ReviewsTabState extends State<ReviewsTab> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        ElevatedButton.icon(
-          icon: const Icon(Icons.add_a_photo),
-          label: const Text('إضافة صورة للتقييم'),
-          onPressed: _uploadReviewImage,
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.add_a_photo),
+                label: const Text('إضافة صورة للتقييم'),
+                onPressed: _uploadReviewImage,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
+                ),
+              ),
+            ),
+          ),
         ),
+        const SizedBox(height: 16),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: _firestore.collection('reviews').snapshots(),
@@ -160,6 +173,7 @@ class _ReviewsTabState extends State<ReviewsTab> {
           result.files.single.bytes!,
           result.files.single.name,
           docId: 'reviews',
+          useUniqueName: true,
         );
         if (url != null) {
           await _firestore.collection('reviews').add({
@@ -227,6 +241,40 @@ class _ReviewsTabState extends State<ReviewsTab> {
     );
   }
 
-  void _deleteReview(String id) =>
-      _firestore.collection('reviews').doc(id).delete();
+  Future<void> _deleteReview(String id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('تأكيد الحذف'),
+        content: const Text('هل أنت متأكد من حذف هذا التقييم؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      // 1. جلب بيانات التقييم لحذف الصورة
+      final doc = await _firestore.collection('reviews').doc(id).get();
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        final url = data['url'] as String?;
+        if (url != null) {
+          // 2. حذف الملف من Dropbox
+          await _dropboxUploader.deleteFile(url);
+        }
+      }
+
+      // 3. حذف المستند من Firestore
+      await _firestore.collection('reviews').doc(id).delete();
+    }
+  }
 }

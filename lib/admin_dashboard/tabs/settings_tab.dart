@@ -640,6 +640,15 @@ class _SettingsTabState extends State<SettingsTab> {
                 final doc = services[index];
                 final data = doc.data() as Map<String, dynamic>;
                 final id = doc.id;
+
+                // تنظيف القائمة من العناصر المحذوفة
+                if (index == 0) {
+                  final currentIds = services.map((e) => e.id).toSet();
+                  _tempFeaturedServiceIds.removeWhere(
+                    (id) => !currentIds.contains(id),
+                  );
+                }
+
                 final isSelected = _tempFeaturedServiceIds.contains(id);
                 final mainImage =
                     data['mainImage'] ??
@@ -801,6 +810,15 @@ class _SettingsTabState extends State<SettingsTab> {
               itemBuilder: (context, index) {
                 final doc = images[index];
                 final id = doc.id;
+
+                // تنظيف القائمة من العناصر المحذوفة
+                if (index == 0) {
+                  final currentIds = images.map((e) => e.id).toSet();
+                  _tempFeaturedGalleryIds.removeWhere(
+                    (id) => !currentIds.contains(id),
+                  );
+                }
+
                 final isSelected = _tempFeaturedGalleryIds.contains(id);
                 return GestureDetector(
                   onTap: () {
@@ -925,6 +943,15 @@ class _SettingsTabState extends State<SettingsTab> {
               itemBuilder: (context, index) {
                 final doc = images[index];
                 final id = doc.id;
+
+                // تنظيف القائمة من العناصر المحذوفة
+                if (index == 0) {
+                  final currentIds = images.map((e) => e.id).toSet();
+                  _tempFeaturedReviewIds.removeWhere(
+                    (id) => !currentIds.contains(id),
+                  );
+                }
+
                 final isSelected = _tempFeaturedReviewIds.contains(id);
                 return GestureDetector(
                   onTap: () {
@@ -1053,6 +1080,15 @@ class _SettingsTabState extends State<SettingsTab> {
                 final doc = ratings[index];
                 final id = doc.id;
                 final data = doc.data() as Map<String, dynamic>;
+
+                // تنظيف القائمة من العناصر المحذوفة
+                if (index == 0) {
+                  final currentIds = ratings.map((e) => e.id).toSet();
+                  _tempFeaturedRatingIds.removeWhere(
+                    (id) => !currentIds.contains(id),
+                  );
+                }
+
                 final isSelected = _tempFeaturedRatingIds.contains(id);
                 final clientName = data['clientName'] ?? 'عميل';
                 final stars = data['stars'] ?? 5;
@@ -1197,6 +1233,7 @@ class _SettingsTabState extends State<SettingsTab> {
         result.files.single.bytes!,
         result.files.single.name,
         docId: field,
+        useUniqueName: true,
       );
       if (url != null) {
         await _firestore.collection('site_data').doc('settings').update({
