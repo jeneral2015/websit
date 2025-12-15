@@ -14,6 +14,9 @@ import 'responsive_utils.dart';
 import 'package:websit/utils/session_manager.dart';
 import 'package:websit/landing-page/widgets/auto_play_carousel.dart';
 import 'package:websit/auth/auth_gate.dart';
+import 'package:websit/services/ad_service.dart';
+import 'package:websit/models/ad_model.dart';
+import 'package:websit/widgets/ad_popup.dart';
 
 class LandingPage extends StatefulWidget {
   final DocumentSnapshot? preloadedSettings;
@@ -30,14 +33,67 @@ class _LandingPageState extends State<LandingPage> {
   // أضف متغير للتحكم في تأثير Hover في حالة الشاشات الكبيرة
   final Map<int, bool> _isHovered = {};
 
+  // === متغيرات الإعلانات ===
+  final AdService _adService = AdService();
+  Timer? _adDelayTimer;
+
   @override
   void initState() {
     super.initState();
+    // تأخير عرض الإعلان بعد فتح الصفحة بـ 3 ثواني
+    _adDelayTimer = Timer(const Duration(seconds: 3), _checkAndShowAd);
   }
 
   @override
   void dispose() {
+    _adDelayTimer?.cancel();
     super.dispose();
+  }
+
+  void _checkAndShowAd() async {
+    final ad = await _adService.getNextAdForUser();
+
+    if (ad != null && mounted) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _showAdPopup(ad);
+        }
+      });
+    }
+  }
+
+  void _showAdPopup(AdModel ad) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.3),
+      builder: (context) => AdPopup(
+        ad: ad,
+        onClose: () {
+          Navigator.pop(context);
+        },
+        onBookNow: () {
+          Navigator.pop(context);
+          _navigateFromAd(ad);
+        },
+        onAdClick: (adId) {
+          _adService.incrementAdClicks(adId);
+        },
+      ),
+    );
+  }
+
+  void _navigateFromAd(AdModel ad) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const BookingForm(),
+        settings: RouteSettings(
+          arguments: {'adTitle': ad.title, 'adSource': 'ad_${ad.id}'},
+        ),
+      ),
+    );
   }
 
   void _startHoverAnimation(int index) {

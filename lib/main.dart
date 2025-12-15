@@ -67,9 +67,16 @@ class BeautyClinicApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.pink,
         fontFamily: 'NotoSansArabic',
+        fontFamilyFallback: const ['Roboto'],
         textTheme: const TextTheme(
-          bodyLarge: TextStyle(fontFamily: 'NotoSansArabic'),
-          bodyMedium: TextStyle(fontFamily: 'NotoSansArabic'),
+          bodyLarge: TextStyle(
+            fontFamily: 'NotoSansArabic',
+            fontFamilyFallback: ['Roboto'],
+          ),
+          bodyMedium: TextStyle(
+            fontFamily: 'NotoSansArabic',
+            fontFamilyFallback: ['Roboto'],
+          ),
         ),
         scaffoldBackgroundColor: Colors.white,
         appBarTheme: const AppBarTheme(

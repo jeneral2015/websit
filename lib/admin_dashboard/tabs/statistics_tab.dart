@@ -515,6 +515,12 @@ class _StatisticsTabState extends State<StatisticsTab> {
               Icons.rate_review,
               Colors.amber,
             ),
+            _buildCollectionCard(
+              'ads',
+              'عدد الإعلانات',
+              Icons.ad_units,
+              Colors.cyan,
+            ),
           ],
         ),
       ),

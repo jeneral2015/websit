@@ -207,8 +207,9 @@ class BookingForm extends StatefulWidget {
 class _BookingFormState extends State<BookingForm> {
   final _formKey = GlobalKey<FormState>();
   final _firestore = FirebaseFirestore.instance;
+  final _messageController = TextEditingController();
 
-  String _name = '', _phone = '', _service = '', _message = '';
+  String _name = '', _phone = '', _service = '';
   String? _selectedLocation;
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
@@ -232,9 +233,22 @@ class _BookingFormState extends State<BookingForm> {
         _service = args;
       } else if (args is Map<String, dynamic>) {
         _service = args['title'] ?? '';
+
+        // إضافة مصدر الإعلان تلقائياً
+        if (args.containsKey('adTitle')) {
+          final adTitle = args['adTitle'] as String;
+          final message = 'جاء من عرض: $adTitle';
+          _messageController.text = message;
+        }
       }
       _loadSettingsAndSlots();
     });
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSettingsAndSlots() async {
@@ -632,12 +646,7 @@ class _BookingFormState extends State<BookingForm> {
                     _buildLocationDropdown(),
                     _buildDateSelector(),
                     _buildTimeSelector(),
-                    _buildTextField(
-                      'رسالة إضافية (اختياري)',
-                      (v) => _message = v,
-                      maxLines: 3,
-                      validator: (v) => null,
-                    ),
+                    _buildMessageField(),
                     const SizedBox(height: 24),
                     _buildSubmitButton(),
                   ],
@@ -702,6 +711,26 @@ class _BookingFormState extends State<BookingForm> {
           keyboardType: keyboardType,
           maxLines: maxLines ?? 1,
           validator: validator ?? (v) => v!.isEmpty ? 'هذا الحقل مطلوب' : null,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMessageField() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: TextFormField(
+          controller: _messageController,
+          decoration: const InputDecoration(
+            labelText: 'رسالة إضافية (اختياري)',
+            border: InputBorder.none,
+            contentPadding: EdgeInsets.zero,
+          ),
+          maxLines: 3,
+          validator: (v) => null,
         ),
       ),
     );
@@ -1098,8 +1127,8 @@ class _BookingFormState extends State<BookingForm> {
                     )
                   else
                     _buildConfirmationItem('الموعد:', 'سيتم تحديده لاحقاً'),
-                  if (_message.isNotEmpty)
-                    _buildConfirmationItem('الرسالة:', _message),
+                  if (_messageController.text.isNotEmpty)
+                    _buildConfirmationItem('الرسالة:', _messageController.text),
                 ],
               ),
             ),
@@ -1196,7 +1225,7 @@ class _BookingFormState extends State<BookingForm> {
               ? DateFormat('yyyy-MM-dd').format(bookingDateTime)
               : 'سيتم التحديد',
           'time': bookingTime ?? 'سيتم التحديد',
-          'message': _message,
+          'message': _messageController.text,
           'status': 'pending',
           'createdAt': FieldValue.serverTimestamp(),
         };

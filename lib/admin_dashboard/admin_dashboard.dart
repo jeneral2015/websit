@@ -10,6 +10,7 @@ import 'tabs/reviews_tab.dart';
 import 'tabs/appointments_tab.dart';
 import 'tabs/statistics_tab.dart';
 import 'tabs/ratings_management_tab.dart';
+import 'tabs/ads_tab.dart';
 import 'notifications_manager.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -28,12 +29,13 @@ class _AdminDashboardState extends State<AdminDashboard>
   StreamSubscription<int>? _notificationSubscription;
 
   final List<String> _tabNames = [
-    'الإعدادات',
+    'المواعيد',
+    'الإعلانات',
     'الخدمات',
     'المعرض',
     'آراء العملاء',
-    'المواعيد',
     'التقييمات',
+    'الإعدادات',
     'الإحصائيات',
   ];
 
@@ -41,7 +43,7 @@ class _AdminDashboardState extends State<AdminDashboard>
   void initState() {
     super.initState();
     _notificationsManager = NotificationsManager();
-    _tabController = TabController(length: 7, vsync: this);
+    _tabController = TabController(length: 8, vsync: this);
     _notificationsManager.initializeNotifications();
 
     // Listen to notifications stream and show popup when unread notifications arrive
@@ -187,12 +189,13 @@ class _AdminDashboardState extends State<AdminDashboard>
               TabBarView(
                 controller: _tabController,
                 children: [
-                  SettingsTab(notificationsManager: _notificationsManager),
+                  AppointmentsTab(notificationsManager: _notificationsManager),
+                  const AdsTab(),
                   const ServicesTab(),
                   const GalleryTab(),
                   const ReviewsTab(),
-                  AppointmentsTab(notificationsManager: _notificationsManager),
                   const RatingsManagementTab(),
+                  SettingsTab(notificationsManager: _notificationsManager),
                   StatisticsTab(),
                 ],
               ),
