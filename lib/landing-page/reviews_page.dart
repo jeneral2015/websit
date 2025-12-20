@@ -449,11 +449,7 @@ class _ReviewsPageState extends State<ReviewsPage> {
                   }
 
                   final screenWidth = MediaQuery.of(context).size.width;
-                  final crossAxisCount = screenWidth > 1200
-                      ? 3
-                      : screenWidth > 600
-                      ? 2
-                      : 1;
+                  final crossAxisCount = screenWidth < 600 ? 2 : 4;
 
                   return Padding(
                     padding: EdgeInsets.all(
@@ -469,12 +465,7 @@ class _ReviewsPageState extends State<ReviewsPage> {
                           30,
                         ),
                         mainAxisSpacing: getResponsiveSize(context, 12, 20, 30),
-                        childAspectRatio: getResponsiveSize(
-                          context,
-                          0.8,
-                          1.0,
-                          1.2,
-                        ),
+                        childAspectRatio: 1.0,
                       ),
                       itemCount: validReviews.length,
                       itemBuilder: (_, i) {

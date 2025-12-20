@@ -288,7 +288,7 @@ class ServicesPage extends StatefulWidget {
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: getResponsiveSize(context, 14, 16, 18),
+                          fontSize: getResponsiveSize(context, 12, 16, 18),
                         ),
                         textAlign: TextAlign.right,
                         maxLines: 2,
@@ -299,6 +299,11 @@ class ServicesPage extends StatefulWidget {
                     GlowingButton(
                       text: 'احجز الآن',
                       argument: service['title'] ?? 'خدمة',
+                      fontSize: getResponsiveSize(context, 10, 14, 18),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: getResponsiveSize(context, 12, 24, 32),
+                        vertical: getResponsiveSize(context, 6, 12, 16),
+                      ),
                     ),
                   ],
                 ),
@@ -418,7 +423,7 @@ class _ServicesPageState extends State<ServicesPage> {
                   return LayoutBuilder(
                     builder: (context, constraints) {
                       final isMobile = constraints.maxWidth < 600;
-                      final crossCount = isMobile ? 1 : 2;
+                      final crossCount = isMobile ? 2 : 4;
 
                       return Padding(
                         padding: const EdgeInsets.all(16),
@@ -428,7 +433,7 @@ class _ServicesPageState extends State<ServicesPage> {
                                 crossAxisCount: crossCount,
                                 crossAxisSpacing: 12,
                                 mainAxisSpacing: 12,
-                                childAspectRatio: crossCount == 1 ? 1.4 : 1,
+                                childAspectRatio: 1.0,
                               ),
                           itemCount: services.length,
                           itemBuilder: (context, index) {

@@ -5,12 +5,16 @@ class GlowingButton extends StatefulWidget {
   final String? argument;
   final String text;
   final VoidCallback? onPressed;
+  final double? fontSize;
+  final EdgeInsetsGeometry? padding;
 
   const GlowingButton({
     super.key,
     this.argument,
     required this.text,
     this.onPressed,
+    this.fontSize,
+    this.padding,
   });
 
   @override
@@ -74,7 +78,9 @@ class _GlowingButtonState extends State<GlowingButton>
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.pink,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              padding:
+                  widget.padding ??
+                  const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -83,7 +89,10 @@ class _GlowingButtonState extends State<GlowingButton>
             ),
             child: Text(
               widget.text,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: widget.fontSize ?? 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         );

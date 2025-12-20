@@ -376,15 +376,17 @@ class _GalleryPageState extends State<GalleryPage> {
 
                   final images = snapshot.data!.docs;
 
+                  final screenWidth = MediaQuery.of(context).size.width;
+                  final crossAxisCount = screenWidth < 600 ? 2 : 4;
+
                   return Padding(
                     padding: const EdgeInsets.all(16),
                     child: GridView.builder(
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            crossAxisSpacing: 8,
-                            mainAxisSpacing: 8,
-                          ),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                      ),
                       itemCount: images.length,
                       itemBuilder: (_, i) {
                         final data = images[i].data() as Map<String, dynamic>;

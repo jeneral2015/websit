@@ -55,6 +55,42 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.of(context).pop(),
             ),
+            actions: [
+              StreamBuilder<int>(
+                stream: _viewCounter.getViewCountStream(
+                  'services',
+                  widget.serviceId,
+                ),
+                builder: (context, viewSnapshot) {
+                  final views = viewSnapshot.data ?? 0;
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.remove_red_eye_outlined,
+                            color: Colors.white,
+                            size: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '$views',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
             title: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -82,29 +118,35 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                 ),
                 const SizedBox(width: 12),
                 // Text container
-                SizedBox(
-                  height: 60,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${settings['clinicWord'] ?? 'عيادة'} ${settings['doctorName'] ?? 'د/ سارة أحمد'}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                Flexible(
+                  child: SizedBox(
+                    height: 60,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${settings['clinicWord'] ?? 'عيادة'} ${settings['doctorName'] ?? 'د/ سارة أحمد'}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
-                      ),
-                      Text(
-                        'تفاصيل الخدمة',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
+                        const Text(
+                          'تفاصيل الخدمة',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -202,33 +244,6 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
                                 const SizedBox(height: 24),
                               ],
 
-                              // View Counter
-                              StreamBuilder<int>(
-                                stream: _viewCounter.getViewCountStream(
-                                  'services',
-                                  widget.serviceId,
-                                ),
-                                builder: (context, viewSnapshot) {
-                                  final views = viewSnapshot.data ?? 0;
-                                  return Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.visibility,
-                                        color: Colors.grey,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '$views مشاهدة',
-                                        style: const TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
                               const SizedBox(height: 24),
 
                               // Booking Button
@@ -269,19 +284,24 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage> {
               builder: (BuildContext context) {
                 return Container(
                   width: MediaQuery.of(context).size.width,
-                  decoration: BoxDecoration(color: Colors.grey[200]),
-                  child: CachedNetworkImage(
-                    imageUrl: imageUrl.toString(),
-                    fit: BoxFit.fill,
-                    placeholder: (context, url) => const Center(
-                      child: CircularProgressIndicator(color: Colors.pink),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: Colors.pink[50],
-                      child: const Icon(
-                        Icons.medical_services,
-                        size: 80,
-                        color: Colors.pink,
+                  decoration: const BoxDecoration(color: Colors.transparent),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 800),
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl.toString(),
+                        fit: BoxFit.fill,
+                        placeholder: (context, url) => const Center(
+                          child: CircularProgressIndicator(color: Colors.pink),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: Colors.pink[50],
+                          child: const Icon(
+                            Icons.medical_services,
+                            size: 80,
+                            color: Colors.pink,
+                          ),
+                        ),
                       ),
                     ),
                   ),
