@@ -230,7 +230,10 @@ class _AdsTabState extends State<AdsTab> {
                         Switch(
                           value: ad.isActive,
                           onChanged: (value) => _toggleAdStatus(ad.id, value),
-                          activeThumbColor: Colors.pink,
+                          activeThumbColor: Colors.green,
+                          activeTrackColor: Colors.green[200],
+                          inactiveThumbColor: Colors.red,
+                          inactiveTrackColor: Colors.red[200],
                         ),
                         SizedBox(height: 4),
                         Row(
@@ -316,7 +319,10 @@ class _AdsTabState extends State<AdsTab> {
                         Switch(
                           value: ad.isActive,
                           onChanged: (value) => _toggleAdStatus(ad.id, value),
-                          activeThumbColor: Colors.pink,
+                          activeThumbColor: Colors.green,
+                          activeTrackColor: Colors.green[200],
+                          inactiveThumbColor: Colors.red,
+                          inactiveTrackColor: Colors.red[200],
                         ),
                         SizedBox(width: 8),
                         IconButton(
