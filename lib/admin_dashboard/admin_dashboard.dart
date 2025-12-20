@@ -27,6 +27,7 @@ class _AdminDashboardState extends State<AdminDashboard>
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool _hasShownInitialNotifications = false;
   StreamSubscription<int>? _notificationSubscription;
+  String _currentTabName = 'المواعيد';
 
   final List<String> _tabNames = [
     'المواعيد',
@@ -45,6 +46,15 @@ class _AdminDashboardState extends State<AdminDashboard>
     _notificationsManager = NotificationsManager();
     _tabController = TabController(length: 8, vsync: this);
     _notificationsManager.initializeNotifications();
+
+    // Listen to tab changes to update the page title
+    _tabController.addListener(() {
+      if (mounted) {
+        setState(() {
+          _currentTabName = _tabNames[_tabController.index];
+        });
+      }
+    });
 
     // Listen to notifications stream and show popup when unread notifications arrive
     _notificationSubscription = _notificationsManager.unreadNotificationsStream
@@ -131,7 +141,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                         maxLines: 1,
                       ),
                       Text(
-                        'لوحة التحكم - ${_tabNames[_tabController.index]}',
+                        'لوحة التحكم - $_currentTabName',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.onPrimary,
                           fontSize: 12,

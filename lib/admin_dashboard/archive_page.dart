@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ArchivePage extends StatefulWidget {
   const ArchivePage({super.key});
@@ -36,88 +37,185 @@ class _ArchivePageState extends State<ArchivePage> {
     final today = DateTime.now();
     final todayString =
         '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('الأرشيف'),
-        backgroundColor: Colors.pink[800],
-        foregroundColor: Colors.white,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(
-                labelText: 'البحث في الأرشيف',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _firestore
-                  .collection('appointments')
-                  .where('date', isLessThan: todayString)
-                  .orderBy('date', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final filteredDocs = snapshot.data!.docs.where((doc) {
-                  final data = doc.data() as Map<String, dynamic>;
-                  final name = data['name'] is String
-                      ? data['name'].toLowerCase()
-                      : '';
-                  final service = data['service'] is String
-                      ? data['service'].toLowerCase()
-                      : '';
-                  final phone = data['phone'] is String
-                      ? data['phone'].toLowerCase()
-                      : '';
-                  return name.contains(_search) ||
-                      service.contains(_search) ||
-                      phone.contains(_search);
-                }).toList();
-                return ListView.builder(
-                  itemCount: filteredDocs.length,
-                  itemBuilder: (context, i) {
-                    final doc = filteredDocs[i];
-                    final data = doc.data() as Map<String, dynamic>;
-                    return Card(
-                      color: _getStatusColor(data['status'] ?? 'pending'),
-                      child: ListTile(
-                        title: Text(data['name'] ?? ''),
-                        subtitle: Text(
-                          '${data['service'] ?? ''} - ${data['date'] ?? ''} ${data['time'] ?? ''}',
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _deleteAppointment(doc.id),
+    return StreamBuilder<DocumentSnapshot>(
+      stream: _firestore.collection('site_data').doc('settings').snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final settings = snapshot.data!.data() as Map<String, dynamic>? ?? {};
+        final bgUrl = settings['backgroundUrl'];
+        final hasValidBg = bgUrl is String && bgUrl.startsWith('http');
+
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+            elevation: 0,
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Logo container
+                SizedBox(
+                  height: 60,
+                  width: 60,
+                  child: ClipOval(
+                    child:
+                        settings['logoUrl'] != null &&
+                            settings['logoUrl'].isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: settings['logoUrl'],
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Icon(
+                              Icons.medical_services,
+                              color: Theme.of(context).colorScheme.onPrimary,
                             ),
-                            Text(data['phone'] ?? ''),
-                          ],
+                          )
+                        : Icon(
+                            Icons.medical_services,
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Text container - wrapped in Flexible to prevent overflow
+                Flexible(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${settings['clinicWord'] ?? 'عيادة'} ${settings['doctorName'] ?? 'د/ سارة أحمد'}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
-                        onTap: () =>
-                            _showAppointmentDialog(context, doc.id, data),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
-                    );
-                  },
-                );
-              },
+                      Text(
+                        'لوحة التحكم - الأرشيف',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
+            toolbarHeight: 80,
           ),
-        ],
-      ),
+          body: Stack(
+            children: [
+              // Background image
+              if (hasValidBg)
+                Container(
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: CachedNetworkImageProvider(bgUrl),
+                      fit: BoxFit.fill,
+                    ),
+                  ),
+                )
+              else
+                Container(color: Colors.pink[50]),
+
+              // Content
+              Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: TextField(
+                      controller: _searchController,
+                      decoration: const InputDecoration(
+                        labelText: 'البحث في الأرشيف',
+                        prefixIcon: Icon(Icons.search),
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: _firestore
+                          .collection('appointments')
+                          .where('date', isLessThan: todayString)
+                          .orderBy('date', descending: true)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                        final filteredDocs = snapshot.data!.docs.where((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final name = data['name'] is String
+                              ? data['name'].toLowerCase()
+                              : '';
+                          final service = data['service'] is String
+                              ? data['service'].toLowerCase()
+                              : '';
+                          final phone = data['phone'] is String
+                              ? data['phone'].toLowerCase()
+                              : '';
+                          return name.contains(_search) ||
+                              service.contains(_search) ||
+                              phone.contains(_search);
+                        }).toList();
+                        return ListView.builder(
+                          itemCount: filteredDocs.length,
+                          itemBuilder: (context, i) {
+                            final doc = filteredDocs[i];
+                            final data = doc.data() as Map<String, dynamic>;
+                            return Card(
+                              color: _getStatusColor(
+                                data['status'] ?? 'pending',
+                              ),
+                              child: ListTile(
+                                title: Text(data['name'] ?? ''),
+                                subtitle: Text(
+                                  '${data['service'] ?? ''} - ${data['date'] ?? ''} ${data['time'] ?? ''}',
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.delete,
+                                        color: Colors.red,
+                                      ),
+                                      onPressed: () =>
+                                          _deleteAppointment(doc.id),
+                                    ),
+                                    Text(data['phone'] ?? ''),
+                                  ],
+                                ),
+                                onTap: () => _showAppointmentDialog(
+                                  context,
+                                  doc.id,
+                                  data,
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
