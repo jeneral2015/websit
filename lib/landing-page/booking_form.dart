@@ -3,6 +3,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'glowing_button.dart';
+import 'package:http/http.dart' as http;
+
+// Webhook configuration
+const String _webhookBaseUrl = 'https://notify-worker.jeneral2015.workers.dev';
+const String _webhookApiKey = '7928a66b-622b-455e-a706-48928b5a2d2a';
 
 class BookingForm extends StatefulWidget {
   const BookingForm({super.key});
@@ -760,6 +765,7 @@ class _BookingFormState extends State<BookingForm> {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: DropdownButtonFormField<String>(
+              isExpanded: true, // Fix overflow for long service names
               initialValue: selectedValue,
               decoration: const InputDecoration(
                 labelText: 'الخدمة',
@@ -785,6 +791,7 @@ class _BookingFormState extends State<BookingForm> {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: DropdownButtonFormField<String>(
+          isExpanded: true, // Fix overflow for long location names
           initialValue: _selectedLocation,
           decoration: const InputDecoration(
             labelText: 'المكان',
@@ -1245,6 +1252,11 @@ class _BookingFormState extends State<BookingForm> {
         return docRef;
       });
 
+      // ✨ Trigger Webhook to notify Worker
+      _triggerWebhook('appointment').catchError((error) {
+        debugPrint('⚠️ Webhook trigger failed (non-critical): $error');
+      });
+
       // ✅ Show success
       await _showSuccessDialog();
 
@@ -1386,5 +1398,27 @@ class _BookingFormState extends State<BookingForm> {
         ],
       ),
     );
+  }
+
+  Future<void> _triggerWebhook(String type) async {
+    try {
+      final url = '$_webhookBaseUrl/trigger/$type';
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': _webhookApiKey,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('✅ Webhook triggered successfully for $type');
+      } else {
+        debugPrint('⚠️ Webhook returned status ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Webhook request failed: $e');
+      // Don't rethrow - this is non-critical
+    }
   }
 }

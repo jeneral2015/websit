@@ -136,9 +136,6 @@ class BeautyClinicApp extends StatelessWidget {
         }
         return null;
       },
-      onGenerateInitialRoutes: (initialRoute) {
-        return [MaterialPageRoute(builder: (context) => const SplashScreen())];
-      },
       debugShowCheckedModeBanner: false,
     );
   }

@@ -2,7 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:websit/utils/session_manager.dart';
+import 'package:http/http.dart' as http;
+
+// Webhook configuration
+const String _webhookBaseUrl = 'https://notify-worker.jeneral2015.workers.dev';
+const String _webhookApiKey = '7928a66b-622b-455e-a706-48928b5a2d2a';
 
 class RatingsPage extends StatefulWidget {
   const RatingsPage({super.key});
@@ -429,6 +435,11 @@ class _RatingsPageState extends State<RatingsPage> {
         'userId': _auth.currentUser?.uid,
       });
 
+      // ✨ Trigger Webhook to notify Worker
+      _triggerWebhook('rating').catchError((error) {
+        debugPrint('⚠️ Webhook trigger failed (non-critical): $error');
+      });
+
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -445,6 +456,28 @@ class _RatingsPageState extends State<RatingsPage> {
           backgroundColor: Colors.red,
         ),
       );
+    }
+  }
+
+  Future<void> _triggerWebhook(String type) async {
+    try {
+      final url = '$_webhookBaseUrl/trigger/$type';
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': _webhookApiKey,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint('✅ Webhook triggered successfully for $type');
+      } else {
+        debugPrint('⚠️ Webhook returned status ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('❌ Webhook request failed: $e');
+      // Don't rethrow - this is non-critical
     }
   }
 }
