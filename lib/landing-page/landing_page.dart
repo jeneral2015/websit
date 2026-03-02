@@ -17,6 +17,7 @@ import 'package:websit/auth/auth_gate.dart';
 import 'package:websit/services/ad_service.dart';
 import 'package:websit/models/ad_model.dart';
 import 'package:websit/widgets/ad_popup.dart';
+import 'package:websit/admin_dashboard/notifications_manager.dart';
 
 class LandingPage extends StatefulWidget {
   final DocumentSnapshot? preloadedSettings;
@@ -717,7 +718,7 @@ class _LandingPageState extends State<LandingPage> {
               ],
             ),
             child: Text(
-              'تقييمات الزوار',
+              'تقيمات الزوار',
               style: TextStyle(
                 fontSize: getResponsiveSize(context, 24, 32, 40),
                 fontWeight: FontWeight.bold,
@@ -743,7 +744,7 @@ class _LandingPageState extends State<LandingPage> {
                 return const Padding(
                   padding: EdgeInsets.all(20.0),
                   child: Text(
-                    'لا توجد تقييمات مختارة للعرض حالياً',
+                    'لا توجد تقيمات مختارة للعرض حالياً',
                     style: TextStyle(fontSize: 16, color: Colors.grey),
                     textAlign: TextAlign.center,
                   ),
@@ -758,7 +759,7 @@ class _LandingPageState extends State<LandingPage> {
                 return const Padding(
                   padding: EdgeInsets.all(20.0),
                   child: Text(
-                    'لا توجد تقييمات مختارة للعرض حالياً',
+                    'لا توجد تقيمات مختارة للعرض حالياً',
                     style: TextStyle(fontSize: 16, color: Colors.grey),
                     textAlign: TextAlign.center,
                   ),
@@ -833,7 +834,7 @@ class _LandingPageState extends State<LandingPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               GlowingButton(
-                text: 'عرض جميع التقييمات',
+                text: 'عرض جميع التقيمات',
                 onPressed: () => _navigateWithAnimation(const RatingsPage()),
               ),
               const SizedBox(width: 12),
@@ -1064,6 +1065,12 @@ class _LandingPageState extends State<LandingPage> {
                                     'stars': stars,
                                     'createdAt': FieldValue.serverTimestamp(),
                                   });
+
+                                  // Create notification for Admin Dashboard
+                                  await NotificationsManager.createNotificationForNewRating(
+                                    clientName.isNotEmpty ? clientName : 'عميل',
+                                    stars,
+                                  );
 
                                   if (dialogContext.mounted) {
                                     Navigator.pop(dialogContext);

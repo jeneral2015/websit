@@ -350,154 +350,178 @@ class NotificationsManager {
   void showNotificationsDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          constraints: const BoxConstraints(maxHeight: 500),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.pink.shade100, width: 1),
-          ),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: Colors.pink[800],
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(20),
-                  ),
-                ),
-                child: const Text(
-                  'كل التنبيهات',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setStateDialog) {
+          return Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              constraints: const BoxConstraints(maxHeight: 500),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.pink.shade100, width: 1),
               ),
-              Expanded(
-                child: _notifications.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.notifications_off,
-                              size: 64,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'لا توجد تنبيهات',
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(12),
-                        itemCount: _notifications.length,
-                        itemBuilder: (context, index) {
-                          final notification = _notifications[index];
-                          final isRead = notification['isRead'] ?? false;
-                          final message = notification['message'] ?? '';
-                          final timestamp = notification['timestamp'];
-
-                          return Card(
-                            margin: const EdgeInsets.symmetric(vertical: 6),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              side: BorderSide(
-                                color: isRead
-                                    ? Colors.grey.shade300
-                                    : Colors.pink.shade200,
-                                width: isRead ? 1 : 2,
-                              ),
-                            ),
-                            color: isRead ? Colors.grey[50] : Colors.pink[50],
-                            elevation: isRead ? 1 : 3,
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 14,
-                              ),
-                              title: Text(
-                                message,
-                                style: TextStyle(
-                                  fontWeight: isRead
-                                      ? FontWeight.normal
-                                      : FontWeight.bold,
-                                  color: isRead
-                                      ? Colors.grey[700]
-                                      : Colors.pink[900],
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(
-                                _formatTimestamp(timestamp),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: isRead
-                                      ? Colors.grey[500]
-                                      : Colors.pink[600],
-                                ),
-                              ),
-                              onTap: () {
-                                _markAsReadAndOpenAppointment(
-                                  context,
-                                  notification,
-                                );
-                              },
-                            ),
-                          );
-                        },
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.pink[800],
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(20),
                       ),
-              ),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(20),
+                    ),
+                    child: const Text(
+                      'كل التنبيهات',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildActionIcon(
-                      Icons.check_circle_outline,
-                      'تحديد الكل كمقروء',
-                      Colors.green,
-                      () {
-                        _markAllAsRead();
-                        Navigator.pop(context);
-                      },
+                  Expanded(
+                    child: _notifications.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.notifications_off,
+                                  size: 64,
+                                  color: Colors.grey[400],
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'لا توجد تنبيهات',
+                                  style: TextStyle(color: Colors.grey[600]),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.all(12),
+                            itemCount: _notifications.length,
+                            itemBuilder: (context, index) {
+                              final notification = _notifications[index];
+                              final isRead = notification['isRead'] ?? false;
+                              final message = notification['message'] ?? '';
+                              final timestamp = notification['timestamp'];
+
+                              return Card(
+                                margin: const EdgeInsets.symmetric(vertical: 6),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                  side: BorderSide(
+                                    color: isRead
+                                        ? Colors.grey.shade300
+                                        : Colors.pink.shade200,
+                                    width: isRead ? 1 : 2,
+                                  ),
+                                ),
+                                color: isRead
+                                    ? Colors.grey[50]
+                                    : Colors.pink[50],
+                                elevation: isRead ? 1 : 3,
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 14,
+                                  ),
+                                  title: Text(
+                                    message,
+                                    style: TextStyle(
+                                      fontWeight: isRead
+                                          ? FontWeight.normal
+                                          : FontWeight.bold,
+                                      color: isRead
+                                          ? Colors.grey[700]
+                                          : Colors.pink[900],
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  subtitle: Text(
+                                    _formatTimestamp(timestamp),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: isRead
+                                          ? Colors.grey[500]
+                                          : Colors.pink[600],
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    _markAsReadAndOpenAppointment(
+                                      context,
+                                      notification,
+                                    );
+                                  },
+                                  trailing: IconButton(
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      color: Colors.grey,
+                                    ),
+                                    onPressed: () {
+                                      _deleteSingleNotification(
+                                        notification['id'],
+                                      );
+                                      setStateDialog(() {
+                                        _notifications.removeWhere(
+                                          (n) => n['id'] == notification['id'],
+                                        );
+                                      });
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(20),
+                      ),
                     ),
-                    _buildActionIcon(
-                      Icons.delete_outline,
-                      'مسح الكل',
-                      Colors.red,
-                      () {
-                        _showClearAllConfirmation(context);
-                      },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildActionIcon(
+                          Icons.check_circle_outline,
+                          'تحديد الكل كمقروء',
+                          Colors.green,
+                          () {
+                            _markAllAsRead();
+                            Navigator.pop(context);
+                          },
+                        ),
+                        _buildActionIcon(
+                          Icons.delete_outline,
+                          'مسح الكل',
+                          Colors.red,
+                          () {
+                            _showClearAllConfirmation(context);
+                          },
+                        ),
+                        _buildActionIcon(
+                          Icons.close,
+                          'إغلاق',
+                          Colors.grey,
+                          () => Navigator.pop(context),
+                        ),
+                      ],
                     ),
-                    _buildActionIcon(
-                      Icons.close,
-                      'إغلاق',
-                      Colors.grey,
-                      () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -754,6 +778,10 @@ class NotificationsManager {
     await batch.commit();
   }
 
+  Future<void> _deleteSingleNotification(String id) async {
+    await _firestore.collection('notifications').doc(id).delete();
+  }
+
   String _formatTimestamp(dynamic timestamp) {
     if (timestamp == null) return 'غير معروف';
     try {
@@ -814,6 +842,44 @@ class NotificationsManager {
     } catch (e) {
       debugPrint('❌ فشل إنشاء تنبيه: $e');
       rethrow;
+    }
+  }
+
+  // ✅ Helper: Trigger notification creation for New Rating
+  static Future<void> createNotificationForNewRating(
+    String clientName,
+    int stars,
+  ) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+      final notificationRef = firestore.collection('notifications').doc();
+      final message = 'تقييم جديد: $stars نجوم من $clientName';
+
+      await notificationRef.set({
+        'message': message,
+        'isRead': false,
+        'timestamp': FieldValue.serverTimestamp(),
+        'type': 'rating', // Optional type to distinguish
+      });
+
+      // Show local notification for Admin side
+      if (!kIsWeb) {
+        FlutterLocalNotificationsPlugin().show(
+          1, // different ID if you want
+          'تقييم جديد',
+          message,
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              'ratings_channel',
+              'تقييمات العملاء',
+              importance: Importance.max,
+              priority: Priority.high,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ فشل إنشاء تنبيه التقييم: $e');
     }
   }
 

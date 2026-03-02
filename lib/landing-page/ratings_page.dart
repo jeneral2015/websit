@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:websit/utils/session_manager.dart';
+import 'package:websit/admin_dashboard/notifications_manager.dart';
 import 'package:http/http.dart' as http;
 
 // Webhook configuration
@@ -434,6 +435,12 @@ class _RatingsPageState extends State<RatingsPage> {
         'createdAt': FieldValue.serverTimestamp(),
         'userId': _auth.currentUser?.uid,
       });
+
+      // Create notification for Admin Dashboard
+      await NotificationsManager.createNotificationForNewRating(
+        clientName.isNotEmpty ? clientName : 'عميل',
+        stars,
+      );
 
       // ✨ Trigger Webhook to notify Worker
       _triggerWebhook('rating').catchError((error) {

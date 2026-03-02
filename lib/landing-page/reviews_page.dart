@@ -47,7 +47,7 @@ class ReviewsPage extends StatefulWidget {
               ],
             ),
             child: Text(
-              'تقيمات العملاء',
+              'آراء العملاء',
               style: TextStyle(
                 fontSize: getResponsiveSize(context, 24, 32, 40),
                 fontWeight: FontWeight.bold,
@@ -374,7 +374,7 @@ class _ReviewsPageState extends State<ReviewsPage> {
                         ),
                       ),
                       Text(
-                        'تقيمات العملاء',
+                        'آراء العملاء',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,

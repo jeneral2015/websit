@@ -66,6 +66,7 @@ class AdModel {
   bool get isExpired => DateTime.now().isAfter(endDate);
   bool get isActiveNow =>
       isActive && !isExpired && DateTime.now().isAfter(startDate);
+  bool get canActivate => DateTime.now().isBefore(endDate);
 
   double get conversionRate {
     if (views == 0) return 0.0;

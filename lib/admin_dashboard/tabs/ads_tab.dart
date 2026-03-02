@@ -228,8 +228,8 @@ class _AdsTabState extends State<AdsTab> {
                     Column(
                       children: [
                         Switch(
-                          value: ad.isActive,
-                          onChanged: (value) => _toggleAdStatus(ad.id, value),
+                          value: ad.isActiveNow,
+                          onChanged: (value) => _toggleAdStatus(ad, value),
                           activeThumbColor: Colors.green,
                           activeTrackColor: Colors.green[200],
                           inactiveThumbColor: Colors.red,
@@ -317,8 +317,8 @@ class _AdsTabState extends State<AdsTab> {
                       children: [
                         // Toggle التشغيل/الإيقاف
                         Switch(
-                          value: ad.isActive,
-                          onChanged: (value) => _toggleAdStatus(ad.id, value),
+                          value: ad.isActiveNow,
+                          onChanged: (value) => _toggleAdStatus(ad, value),
                           activeThumbColor: Colors.green,
                           activeTrackColor: Colors.green[200],
                           inactiveThumbColor: Colors.red,
@@ -564,16 +564,152 @@ class _AdsTabState extends State<AdsTab> {
     _showAdDialog(ad: ad);
   }
 
-  void _toggleAdStatus(String adId, bool newStatus) async {
+  void _toggleAdStatus(AdModel ad, bool newStatus) async {
     try {
-      await _adService.updateAd(adId, {'isActive': newStatus});
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(newStatus ? 'تم تفعيل الإعلان' : 'تم إيقاف الإعلان'),
-            backgroundColor: newStatus ? Colors.green : Colors.orange,
+      if (newStatus == true && !ad.canActivate) {
+        int extensionDays = 7;
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (context) => StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return AlertDialog(
+                title: const Text('تأكيد تفعيل إعلان منتهي'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'انتهت فترة هذا الإعلان. لتفعيل الإعلان مرة أخرى، يرجى تحديد مدة التمديد.',
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            if (extensionDays > 1) {
+                              setStateDialog(() => extensionDays--);
+                            }
+                          },
+                          icon: const Icon(Icons.remove_circle_outline),
+                          color: Colors.red,
+                        ),
+                        SizedBox(
+                          width: 120, // عرض كافٍ للكلمة والرقم
+                          child: TextField(
+                            textAlign: TextAlign.center,
+                            decoration: const InputDecoration(
+                              labelText: 'مدة التمديد بالأيام',
+                              alignLabelWithHint: true,
+                              floatingLabelAlignment:
+                                  FloatingLabelAlignment.center,
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 8,
+                              ),
+                              border: OutlineInputBorder(),
+                            ),
+                            keyboardType: TextInputType.number,
+                            controller:
+                                TextEditingController(
+                                    text: extensionDays.toString(),
+                                  )
+                                  ..selection = TextSelection.fromPosition(
+                                    TextPosition(
+                                      offset: extensionDays.toString().length,
+                                    ),
+                                  ),
+                            onChanged: (value) {
+                              extensionDays = int.tryParse(value) ?? 0;
+                            },
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            setStateDialog(() => extensionDays++);
+                          },
+                          icon: const Icon(Icons.add_circle_outline),
+                          color: Colors.green,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                actionsPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                actions: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text('إلغاء'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (extensionDays > 0) {
+                              Navigator.pop(context, true);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('الرجاء إدخال مدة صحيحة'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text('موافق وتفعيل'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
           ),
         );
+
+        if (confirmed == true && extensionDays > 0) {
+          final newEndDate = DateTime.now().add(Duration(days: extensionDays));
+          await _adService.updateAd(ad.id, {
+            'isActive': true,
+            'endDate': Timestamp.fromDate(newEndDate),
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('تم تفعيل الإعلان وتمديده 7 أيام بنجاح'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        }
+      } else {
+        await _adService.updateAd(ad.id, {'isActive': newStatus});
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                newStatus ? 'تم تفعيل الإعلان' : 'تم إيقاف الإعلان',
+              ),
+              backgroundColor: newStatus ? Colors.green : Colors.orange,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
